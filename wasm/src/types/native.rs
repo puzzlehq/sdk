@@ -18,6 +18,7 @@ pub use super::networks::*;
 
 pub use snarkvm_console::{
     account::{Address, PrivateKey, Signature, ViewKey},
+    algorithms::BHP256,
     network::Network,
     program::{
         Ciphertext,
@@ -41,7 +42,6 @@ pub use snarkvm_ledger_query::Query;
 pub use snarkvm_ledger_store::helpers::memory::BlockMemory;
 pub use snarkvm_synthesizer::{
     snark::{ProvingKey, VerifyingKey},
-    algorithms::BHP256,
     Process,
     Program,
 };

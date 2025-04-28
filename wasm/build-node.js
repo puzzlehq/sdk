@@ -53,6 +53,7 @@ async function buildJS(network) {
 const {
     initThreadPool: wasmInitThreadPool,
     Address,
+    BHP256,
     Execution,
     ExecutionResponse,
     Field,
@@ -94,6 +95,7 @@ async function initThreadPool(threads) {
 export {
     initThreadPool,
     Address,
+    BHP256,
     Execution,
     ExecutionResponse,
     Field,
@@ -179,6 +181,7 @@ export function initThreadPool(threads?: number): Promise<void>;
 
 export {
     Address,
+    BHP256,
     Execution,
     ExecutionResponse,
     Field,

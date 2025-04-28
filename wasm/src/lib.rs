@@ -152,9 +152,9 @@
 //! example of how to use these modules to build a web app. Its source code can be found in the
 //!
 
-pub mod account;
 use std::panic;
 
+pub mod account;
 pub use account::*;
 
 pub mod programs;
@@ -168,6 +168,7 @@ pub use types::Field;
 pub use types::Plaintext;
 
 pub mod hashes;
+pub use hashes::*;
 
 #[cfg(not(test))]
 mod thread_pool;
@@ -229,6 +230,17 @@ impl Credits for RecordPlaintextNative {
             _ => Err("The record provided does not contain a microcredits field".to_string()),
         }
     }
+}
+
+/// Converts an array of JS types to a vector of Rust analog types.
+#[macro_export]
+macro_rules! from_js_typed_array {
+    ($input:expr, $method:ident, $_type:expr) => {{
+        $input
+            .iter()
+            .map(|x| x.$method().ok_or_else(|| format!("Input must be a {} array", $_type)))
+            .collect::<Result<Vec<bool>, String>>()
+    }};
 }
 
 #[cfg(not(test))]
