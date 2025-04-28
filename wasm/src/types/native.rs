@@ -40,8 +40,8 @@ pub use snarkvm_ledger_block::{Execution, Transaction};
 pub use snarkvm_ledger_query::Query;
 pub use snarkvm_ledger_store::helpers::memory::BlockMemory;
 pub use snarkvm_synthesizer::{
-    process::{cost_in_microcredits, deployment_cost},
     snark::{ProvingKey, VerifyingKey},
+    algorithms::BHP256,
     Process,
     Program,
 };
@@ -60,6 +60,7 @@ pub type ViewKeyNative = ViewKey<CurrentNetwork>;
 
 // Algebraic types
 pub type FieldNative = Field<CurrentNetwork>;
+pub type BHP256Native = BHP256<CurrentNetwork>;
 
 // Record types
 pub type CiphertextNative = Ciphertext<CurrentNetwork>;

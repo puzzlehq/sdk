@@ -167,6 +167,8 @@ pub mod types;
 pub use types::Field;
 pub use types::Plaintext;
 
+pub mod hashes;
+
 #[cfg(not(test))]
 mod thread_pool;
 
