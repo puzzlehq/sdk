@@ -64,3 +64,21 @@ Further documentation and tutorials as to how to use the modules built from this
 in the future. However, in the meantime, the [provable.tools](https://provable.tools) website is a good
 example of how to use these modules to build a web app. Its source code can be found in the
 [Aleo SDK](https://github.com/ProvableHQ/sdk) repo in the `website` folder.
+
+## Jonathan Update 04/29/25
+
+to get the aleo_wasm.js file to work in jigsaw, you have to replace wasm_path with
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const wasm_path = `${__dirname}/aleo_wasm.wasm`;
+
+then you have to replace require("fs") with fs.
+
+Finally, you have to add the correct imports to the files.
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path'
+
+You must do this for both dist/mainnet/aleo_wasm.js and dist/testnet/aleo_wasm.js.
+
+Ping jon if you need an example of the files. 

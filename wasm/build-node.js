@@ -32,13 +32,12 @@ async function buildWasm(network) {
                     "--features", `node,${network}`,
                     "-Z", "build-std=panic_abort,std",
                 ],
-
                 experimental: {
                     typescriptDeclarationDir: `dist/${network}`,
                 },
                 nodejs: true,
                 target: "esm",
-                wasmBindgenOpts: "--target nodejs",
+                wasmBindgenOpts: "--target bundler",
             }),
         ],
     }, {
