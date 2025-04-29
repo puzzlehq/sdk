@@ -36,6 +36,9 @@ async function buildWasm(network) {
                 experimental: {
                     typescriptDeclarationDir: `dist/${network}`,
                 },
+                nodejs: true,
+                target: "esm",
+                wasmBindgenOpts: "--target nodejs",
             }),
         ],
     }, {
@@ -48,7 +51,15 @@ async function buildWasm(network) {
 
 
 async function buildJS(network) {
-    const js = `import wasm from "./dist/${network}/aleo_wasm.js";
+    const js = `import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+import initWasm from "./aleo_wasm.js";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+const wasmPath = join(__dirname, 'aleo_wasm.wasm');
+const wasmBuffer = await readFile(wasmPath);
 
 const {
     initThreadPool: wasmInitThreadPool,
@@ -60,7 +71,6 @@ const {
     Metadata,
     OfflineQuery,
     Plaintext,
-    Private,
     PrivateKey,
     PrivateKeyCiphertext,
     Program,
@@ -73,22 +83,17 @@ const {
     ViewKey,
     VerifyingKey,
     verifyFunctionExecution,
-} = await wasm({
-    importHook: async (path) => {
-        const { createRequire } = await import('module');
-        const require = createRequire(import.meta.url);
-        return require.resolve(path);
-    },
-});
+} = await initWasm(wasmBuffer);
 
 async function initThreadPool(threads) {
     if (threads == null) {
-        threads = require('os').cpus().length;
+        const { cpus } = await import('node:os');
+        threads = cpus().length;
     }
 
     console.info(\`Spawning \${threads} threads\`);
 
-    const { Worker } = require('worker_threads');
+    const { Worker } = await import('node:worker_threads');
     await wasmInitThreadPool((_, options) => new Worker("./worker.js", options), threads);
 }
 
@@ -116,58 +121,40 @@ export {
     verifyFunctionExecution,
 };`;
 
-    await buildRollup({
-        input: {
-            "index": "entry",
-        },
-        plugins: [
-            virtual({
-                "entry": js,
-            }),
-        ],
-    }, {
-        dir: `dist/${network}`,
-        format: "es",
-        sourcemap: true,
-    });
+    await $fs.writeFile(`dist/${network}/index.js`, js);
 }
 
 
 async function buildWorker(network) {
-  const worker = `import wasm from "./dist/${network}/aleo_wasm.js";
-const { parentPort } = require('worker_threads');
+    const worker = `import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+import initWasm from "./aleo_wasm.js";
+import { parentPort } from 'node:worker_threads';
 
-async function initializeWorker(wasm) {
-  // Use Node.js worker thread messaging
-  parentPort.once('message', async (data) => {
-      const initWasm = await wasm;
-      const { module, memory, address } = data;
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
-      const exports = await initWasm({
-          initializeHook: (init) => init(module, memory),
-      });
+async function initializeWorker(initWasm) {
+    const wasmPath = join(__dirname, 'aleo_wasm.wasm');
+    const wasmBuffer = await readFile(wasmPath);
 
-      parentPort.postMessage(null);
-      exports.runRayonThread(address);
-  });
+    // Use Node.js worker thread messaging
+    parentPort.once('message', async (data) => {
+        const wasm = await initWasm(wasmBuffer);
+        const { module, memory, address } = data;
+
+        const exports = await wasm({
+            initializeHook: (init) => init(module, memory),
+        });
+
+        parentPort.postMessage(null);
+        exports.runRayonThread(address);
+    });
 }
 
-await initializeWorker(wasm);`;
+await initializeWorker(initWasm);`;
 
-    await buildRollup({
-        input: {
-            "worker": "entry",
-        },
-        plugins: [
-            virtual({
-                "entry": worker,
-            }),
-        ],
-    }, {
-        dir: `dist/${network}`,
-        format: "es",
-        sourcemap: true,
-    });
+    await $fs.writeFile(`dist/${network}/worker.js`, worker);
 }
 
 
