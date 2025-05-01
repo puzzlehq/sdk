@@ -1,6 +1,6 @@
 {
   "name": "@puzzlehq/aleo-wasm-nodejs",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "description": "Aleo SDK WASM",
   "collaborators": [
     "The Provable Team",
