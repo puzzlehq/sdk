@@ -14,16 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with the Aleo SDK library. If not, see <https://www.gnu.org/licenses/>.
 
-use crate::types::native::PlaintextNative;
-use crate::native::Network;
+use crate::native::{Network, PlaintextNative, Value};
 use crate::network_string_id;
 use snarkvm_console::network::TestnetV0;
-use snarkvm_console::prelude::ToBits;
-
+use snarkvm_console::prelude::{ToBits, ToFields};
 use wasm_bindgen::prelude::wasm_bindgen;
-
 use std::str::FromStr;
-
 
 #[wasm_bindgen]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -55,6 +51,14 @@ impl Plaintext {
         Err(e) => return Err(e)
       }
     }
+
+    #[wasm_bindgen(js_name = "hashPoseidon2")]
+    pub fn hash_poseidon2(&self) -> Result<String, String> {
+      match plaintext_hash_ps2_impl::<TestnetV0>(&self.as_string) {
+        Ok(result) => Ok(result),
+        Err(e) => return Err(e)
+      }
+    }
 }
 
 pub fn plaintext_from_string_impl(plaintext: &str) -> Result<String, String> {
@@ -66,6 +70,16 @@ pub fn plaintext_hash_bhp256_impl<N: Network>(plaintext_string: &str) -> Result<
   let literal = PlaintextNative::from_str(&plaintext_string).unwrap();
   let bits = literal.to_bits_le();
   let field_string = N::hash_bhp256(&bits).map_err(|e| e.to_string())?.to_string();
+  Ok(field_string)
+}
+
+pub fn plaintext_hash_ps2_impl<N: Network>(plaintext_string: &str) -> Result<String, String> {
+  // let literal = PlaintextNative::from_str(&plaintext_string).unwrap();
+  let fields = Value::<N>::from_str(plaintext_string)
+    .expect("could not turn stringified struct into Value")
+    .to_fields()
+    .expect("could not turn Value into Fields");
+  let field_string = N::hash_psd2(&fields).map_err(|e| e.to_string())?.to_string();
   Ok(field_string)
 }
 

@@ -34,6 +34,7 @@ pub use snarkvm_console::{
         Record,
         Response,
         ValueType,
+        Value,
     },
     types::Field,
 };
