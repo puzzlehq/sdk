@@ -41,6 +41,7 @@ impl ProgramManager {
     /// @param function_name The function to authorize.
     /// @param inputs A javascript array of inputs to the function.
     /// @param imports The imports to the program in the format {"programname.aleo":"aleo instructions source code"}.
+    #[wasm_bindgen(js_name = authExecute)]
     pub async fn authorize(
         private_key: &PrivateKey,
         program: &str,
