@@ -23,7 +23,7 @@ pub use field::Field;
 pub mod group;
 pub use group::Group;
 
-mod networks;
+pub mod networks;
 
 pub(crate) mod native;
 

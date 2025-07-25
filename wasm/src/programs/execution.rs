@@ -28,6 +28,7 @@ use crate::{
         ProgramNative,
         VerifyingKeyNative,
     },
+    programs::manager::ProgramManager,
 };
 use snarkvm_algorithms::snark::varuna::VarunaVersion;
 use snarkvm_console::network::Network;

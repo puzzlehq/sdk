@@ -1,5 +1,5 @@
 {
-  "name": "@puzzlehq/aleo-wasm-web",
+  "name": "@puzzlehq/aleo-wasm-nodejs",
   "version": "0.8.0",
   "description": "Aleo SDK WASM",
   "collaborators": [

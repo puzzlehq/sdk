@@ -27,7 +27,8 @@ use crate::{
     to_bits_array_le,
     types::native::{IdentifierNative, PlaintextNative},
 };
-use snarkvm_console::prelude::{FromBits, FromBytes, FromFields, ToBits, ToBytes, ToFields};
+use snarkvm_console::program::Value;
+use snarkvm_console::{prelude::{FromBits, FromBytes, FromFields, ToBits, ToBytes, ToFields}, program::Network};
 
 use js_sys::{Array, Uint8Array};
 use once_cell::sync::OnceCell;
@@ -195,6 +196,21 @@ impl Plaintext {
     pub fn to_object(&self) -> Result<JsValue, String> {
         Ok(plaintext_to_js_value(&self.0))
     }
+
+
+    #[wasm_bindgen(js_name = "hashPoseidon2")]
+    pub fn hash_poseidon2(&self) -> Result<String, String> {
+        plaintext_hash_ps2_impl::<crate::types::native::CurrentNetwork>(&self.to_string())
+    }
+}
+
+pub fn plaintext_hash_ps2_impl<N: Network>(plaintext_string: &str) -> Result<String, String> {
+    let fields = Value::<N>::from_str(plaintext_string)
+        .map_err(|e| format!("could not turn stringified struct into Value: {}", e))?
+        .to_fields()
+        .map_err(|e| format!("could not turn Value into Fields: {}", e))?;
+    let field_string = N::hash_psd2(&fields).map_err(|e| e.to_string())?.to_string();
+    Ok(field_string)
 }
 
 impl Deref for Plaintext {
