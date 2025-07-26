@@ -62,13 +62,16 @@ async function buildWasm(network) {
 async function buildJS(network) {
     const js = `export * from "./dist/${network}/tmp/aleo_wasm.js";
 
-// Node.js thread pool initialization
+import { initThreadPool as wasmInitThreadPool } from "./dist/${network}/tmp/aleo_wasm.js";
+
 export async function initThreadPool(threads) {
     if (threads == null) {
-        threads = require('os').cpus().length;
+        threads = navigator.hardwareConcurrency;
     }
 
-    console.info(\`Using \${threads} threads for Node.js\`);
+    console.info(\`Spawning \${threads} threads\`);
+
+    await wasmInitThreadPool(new URL("worker.js", import.meta.url), threads);
 }`;
 
     await buildRollup({
@@ -89,8 +92,37 @@ export async function initThreadPool(threads) {
 
 
 async function buildWorker(network) {
-    const worker = `// Node.js worker - simplified for Node.js environment
-export {};`;
+    const worker = `import { init } from "./dist/${network}/tmp/aleo_wasm_custom.js";
+
+async function initializeWorker() {
+    // Wait for the main thread to send us the Module, Memory, and Rayon thread pointer.
+    function waitForEvent() {
+        return new Promise((resolve) => {
+            addEventListener("message", (event) => {
+                resolve(event.data);
+            }, {
+                capture: true,
+                once: true,
+            });
+        });
+    }
+
+    const { module, memory, address } = await waitForEvent();
+
+    // Runs the Wasm inside of the Worker, but using the main thread's Module and Memory.
+    const exports = await init({ module, memory });
+
+    // Tells the main thread that we're finished initializing.
+    postMessage(null);
+
+    // This will hang the Worker while running the Rayon thread.
+    exports.runRayonThread(address);
+
+    // When the Rayon thread is finished, close the Worker.
+    close();
+}
+
+await initializeWorker();`;
 
     await buildRollup({
         input: {
