@@ -20,6 +20,8 @@ import { PlaintextArray} from "./models/plaintext/array.js";
 import { PlaintextLiteral} from "./models/plaintext/literal.js";
 import { PlaintextObject } from "./models/plaintext/plaintext.js";
 import { PlaintextStruct} from "./models/plaintext/struct.js";
+import { ProvingRequestJSON } from "./models/provingRequest.js";
+import { ProvingResponse } from "./models/provingResponse.js";
 import { RatificationJSON } from "./models/ratification.js";
 import { SolutionsJSON, SolutionJSON, PartialSolutionJSON } from "./models/solution.js";
 import { TransactionJSON } from "./models/transaction/transactionJSON.js";
@@ -51,9 +53,7 @@ async function initializeWasm() {
     console.warn("initializeWasm is deprecated, you no longer need to use it");
 }
 
-export { createAleoWorker } from "./managed-worker.js";
-
-export { ProgramManager } from "./program-manager.js";
+export { ProgramManager, ProvingRequestOptions, ExecuteOptions, FeeAuthorizationOptions, AuthorizationOptions } from "./program-manager.js";
 
 export { logAndThrow } from "./utils.js";
 
@@ -73,6 +73,11 @@ export {
     EncryptionToolkit,
     Field,
     Group,
+    I8,
+    I16,
+    I32,
+    I64,
+    I128,
     OfflineQuery,
     Pedersen64,
     Pedersen128,
@@ -85,12 +90,18 @@ export {
     Program,
     ProgramManager as ProgramManagerBase,
     ProvingKey,
+    ProvingRequest,
     RecordCiphertext,
     RecordPlaintext,
     Signature,
     Scalar,
     Transaction,
     Transition,
+    U8,
+    U16,
+    U32,
+    U64,
+    U128,
     VerifyingKey,
     ViewKey,
     initThreadPool,
@@ -151,6 +162,8 @@ export {
     PlaintextObject,
     PlaintextStruct,
     ProgramImports,
+    ProvingRequestJSON,
+    ProvingResponse,
     RatificationJSON,
     RecordProvider,
     RecordSearchParams,
