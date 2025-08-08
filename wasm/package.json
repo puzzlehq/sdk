@@ -1,6 +1,6 @@
 {
   "name": "@puzzlehq/aleo-wasm-web",
-  "version": "0.7.0",
+  "version": "0.8.1",
   "description": "Aleo SDK WASM",
   "collaborators": [
     "The Provable Team",
