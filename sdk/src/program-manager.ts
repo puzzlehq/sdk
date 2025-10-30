@@ -1,7 +1,8 @@
 import { Account } from "./account.js";
 import { AleoNetworkClient, AleoNetworkClientOptions, ProgramImports } from "./network-client.js";
 import { ImportedPrograms, ImportedVerifyingKeys } from "./models/imports.js";
-import { RecordProvider, RecordSearchParams } from "./record-provider.js";
+import { RecordProvider } from "./record-provider.js";
+import { RecordSearchParams } from "./models/record-provider/recordSearchParams.js";
 
 import {
     AleoKeyProvider,
@@ -35,6 +36,7 @@ import {
 } from "./constants.js";
 
 import { logAndThrow } from "./utils.js";
+import { OwnedRecord } from "./models/record-provider/ownedRecord.js";
 
 /**
  * Represents the options for executing a transaction in the Aleo network.
@@ -70,17 +72,19 @@ interface ExecuteOptions {
     offlineQuery?: OfflineQuery;
     program?: string | Program;
     imports?: ProgramImports;
+    edition?: number,
 }
 
 /**
  * Options for building an Authorization for a function.
  *
- * @property programName {string} Name of the program containing the function to build the authorization for.
- * @property functionName {string} Name of the function name to build the authorization for.
- * @property inputs {string[]} The inputs to the function.
- * @property programSource {string | Program} The optional source code for the program to build an execution for.
- * @property privateKey {PrivateKey} Optional private key to use to build the authorization.
- * @property programImports {ProgramImports} The other programs the program imports.
+ * @property {string} programName Name of the program containing the function to build the authorization for.
+ * @property {string} functionName Name of the function name to build the authorization for.
+ * @property {string[]} inputs The inputs to the function.
+ * @property {string | Program} [programSource] The optional source code for the program to build an execution for.
+ * @property {PrivateKey} [privateKey] Optional private key to use to build the authorization.
+ * @property {ProgramImports} [programImports] The other programs the program imports.
+ * @property {edition} [edition]
  */
 interface AuthorizationOptions {
     programName: string;
@@ -89,16 +93,17 @@ interface AuthorizationOptions {
     programSource?: string | Program;
     privateKey?: PrivateKey;
     programImports?: ProgramImports;
+    edition?: number,
 }
 
 /**
  * Options for executing a fee authorization.
  *
- * @property deploymentOrExecutionId {string} The id of a previously built Execution or Authorization.
- * @property baseFeeCredits {number} The number of Aleo Credits to pay for the base fee.
- * @property priorityFeeCredits {number} The number of Aleo Credits to pay for the priority fee.
- * @property privateKey {PrivateKey} Optional private key to specify for the authorization.
- * @property feeRecord {RecordPlaintext} A record to specify to pay the private fee. If this is specified a `fee_private` authorization will be built.
+ * @property {string} deploymentOrExecutionId The id of a previously built Execution or Authorization.
+ * @property {number} baseFeeCredits The number of Aleo Credits to pay for the base fee.
+ * @property {number} [priorityFeeCredits] The number of Aleo Credits to pay for the priority fee.
+ * @property {PrivateKey} [privateKey]  Optional private key to specify for the authorization.
+ * @property {RecordPlaintext} [feeRecord]  A record to specify to pay the private fee. If this is specified a `fee_private` authorization will be built.
  */
 interface FeeAuthorizationOptions {
     deploymentOrExecutionId: string,
@@ -106,6 +111,29 @@ interface FeeAuthorizationOptions {
     priorityFeeCredits?: number,
     privateKey?: PrivateKey,
     feeRecord?: RecordPlaintext,
+}
+
+/**
+ * Represents the options for executing a transaction on the Aleo Network from an authorization.
+ *
+ * @property {string} programName - The name of the program containing the function to be executed.
+ * @property {KeySearchParams} [keySearchParams] - Optional parameters for finding the matching proving & verifying keys for the function.
+ * @property {ProvingKey} [provingKey] - Optional proving key to use for the transaction.
+ * @property {VerifyingKey} [verifyingKey] - Optional verifying key to use for the transaction.
+ * @property {OfflineQuery} [offlineQuery] - Optional offline query if creating transactions in an offline environment.
+ * @property {string | Program} [program] - Optional program source code to use for the transaction.
+ * @property {ProgramImports} [imports] - Optional programs that the program being executed imports.
+ */
+interface ExecuteAuthorizationOptions {
+    programName: string;
+    authorization: Authorization,
+    feeAuthorization?: Authorization,
+    keySearchParams?: KeySearchParams;
+    provingKey?: ProvingKey;
+    verifyingKey?: VerifyingKey;
+    offlineQuery?: OfflineQuery;
+    program?: string | Program;
+    imports?: ProgramImports;
 }
 
 /**
@@ -140,6 +168,7 @@ interface ProvingRequestOptions {
     programImports?: ProgramImports;
     broadcast?: boolean;
     unchecked?: boolean;
+    edition?: number,
 }
 
 /**
@@ -151,6 +180,7 @@ class ProgramManager {
     host: string;
     networkClient: AleoNetworkClient;
     recordProvider: RecordProvider | undefined;
+    inclusionKeysLoaded: boolean = false;
 
     /** Create a new instance of the ProgramManager
      *
@@ -276,7 +306,7 @@ class ProgramManager {
      * // Create a new NetworkClient, KeyProvider, and RecordProvider
      * const keyProvider = new AleoKeyProvider();
      * const recordProvider = new NetworkRecordProvider(account, networkClient);
-     * keyProvider.useCache = true;
+     * keyProvider.useCache(true);
      *
      * // Initialize a program manager with the key provider to automatically fetch keys for deployments
      * const program = "program hello_hello.aleo;\n\nfunction hello:\n    input r0 as u32.public;\n    input r1 as u32.private;\n    add r0 r1 into r2;\n    output r2 as u32.private;\n";
@@ -350,14 +380,12 @@ class ProgramManager {
         // Get the fee record from the account if it is not provided in the parameters
         try {
             feeRecord = privateFee
-                ? <RecordPlaintext>(
-                    await this.getCreditsRecord(
+                ? RecordPlaintext.fromString((await this.getCreditsRecord(
                         priorityFee,
                         [],
                         feeRecord,
                         recordSearchParams,
-                    )
-                )
+                    )).record_plaintext?? '')
                 : undefined;
         } catch (e: any) {
             logAndThrow(
@@ -419,7 +447,7 @@ class ProgramManager {
      * // Create a new NetworkClient, KeyProvider, and RecordProvider.
      * const keyProvider = new AleoKeyProvider();
      * const recordProvider = new NetworkRecordProvider(account, networkClient);
-     * keyProvider.useCache = true;
+     * keyProvider.useCache(true);
      *
      * // Initialize a program manager with the key provider to automatically fetch keys for deployments
      * const program = "program hello_hello.aleo;\n\nfunction hello:\n    input r0 as u32.public;\n    input r1 as u32.private;\n    add r0 r1 into r2;\n    output r2 as u32.private;\n";
@@ -487,7 +515,7 @@ class ProgramManager {
      * // Create a new NetworkClient, KeyProvider, and RecordProvider.
      * const keyProvider = new AleoKeyProvider();
      * const recordProvider = new NetworkRecordProvider(account, networkClient);
-     * keyProvider.useCache = true;
+     * keyProvider.useCache(true);
      *
      * // Initialize a program manager with the key provider to automatically fetch keys for executions
      * const programManager = new ProgramManager("https://api.explorer.provable.com/v1", keyProvider, recordProvider);
@@ -516,7 +544,6 @@ class ProgramManager {
     ): Promise<Transaction> {
         // Destructure the options object to access the parameters
         const {
-            programName,
             functionName,
             priorityFee,
             privateFee,
@@ -531,7 +558,9 @@ class ProgramManager {
         let provingKey = options.provingKey;
         let verifyingKey = options.verifyingKey;
         let program = options.program;
+        let programName = options.programName;
         let imports = options.imports;
+        let edition = options.edition;
 
         // Ensure the function exists on the network
         if (program === undefined) {
@@ -546,6 +575,21 @@ class ProgramManager {
             }
         } else if (program instanceof Program) {
             program = program.toString();
+        }
+
+        // Get the program name if it is not provided in the parameters.
+        if (programName === undefined) {
+            programName = Program.fromString(program).id();
+        }
+
+        if (edition == undefined) {
+            try {
+
+                edition = await this.networkClient.getLatestProgramEdition(programName);
+            } catch (e: any) {
+                console.warn(`Error finding edition for ${programName}. Network response: '${e.message}'. Assuming edition 1.`);
+                edition = 1;
+            }
         }
 
         // Get the private key from the account if it is not provided in the parameters
@@ -564,14 +608,12 @@ class ProgramManager {
         // Get the fee record from the account if it is not provided in the parameters
         try {
             feeRecord = privateFee
-                ? <RecordPlaintext>(
-                    await this.getCreditsRecord(
+                ? RecordPlaintext.fromString((await this.getCreditsRecord(
                         priorityFee,
                         [],
                         feeRecord,
                         recordSearchParams,
-                    )
-                )
+                    )).record_plaintext?? '')
                 : undefined;
         } catch (e: any) {
             logAndThrow(
@@ -619,6 +661,17 @@ class ProgramManager {
             }
         }
 
+        if (offlineQuery && !this.inclusionKeysLoaded) {
+            try {
+                const inclusionKeys = await this.keyProvider.inclusionKeys();
+                WasmProgramManager.loadInclusionProver(inclusionKeys[0])
+                this.inclusionKeysLoaded = true;
+                console.log("Successfully loaded inclusion key");
+            } catch {
+                logAndThrow(`Inclusion key bytes not loaded, please ensure the program manager is initialized with a KeyProvider that includes the inclusion key.`)
+            }
+        }
+
         // Build an execution transaction
         return await WasmProgramManager.buildExecutionTransaction(
             executionPrivateKey,
@@ -634,7 +687,166 @@ class ProgramManager {
             feeProvingKey,
             feeVerifyingKey,
             offlineQuery,
+            edition
         );
+    }
+
+    /**
+     * Builds an execution transaction for submission to the Aleo network from an Authorization and Fee Authorization.
+     * This method is helpful if signing and authorization needs to be done in a secure environment separate from where
+     * transactions are built.
+     *
+     * @param {ExecuteAuthorizationOptions} options - The options for executing the authorizations.
+     * @returns {Promise<Transaction>} - A promise that resolves to the transaction or an error.
+     *
+     * @example
+     * /// Import the mainnet version of the sdk.
+     * import { AleoKeyProvider, ProgramManager, NetworkRecordProvider } from "@provablehq/sdk/mainnet.js";
+     *
+     * // Create a new NetworkClient, KeyProvider, and RecordProvider.
+     * const keyProvider = new AleoKeyProvider();
+     * keyProvider.useCache(true);
+     *
+     * // Initialize a program manager with the key provider to automatically fetch keys for executions
+     * const programManager = new ProgramManager("https://api.explorer.provable.com/v1", keyProvider);
+     *
+     * // Build the `Authorization`.
+     * const authorization = await programManager.buildAuthorization({
+     *   programName: "credits.aleo",
+     *   functionName: "transfer_public",
+     *   inputs: [
+     *     "aleo1vwls2ete8dk8uu2kmkmzumd7q38fvshrht8hlc0a5362uq8ftgyqnm3w08",
+     *     "10000000u64",
+     *   ],
+     * });
+     *
+     * // Derive the execution ID and base fee.
+     * const executionId = authorization.toExecutionId().toString();
+     *
+     * // Get the base fee in microcredits.
+     * const baseFeeMicrocredits = ProgramManager.estimateFeeForAuthorization(authorization, "credits.aleo");
+     * const baseFeeCredits = baseFeeMicrocredits/1000000;
+     *
+     * // Build a credits.aleo/fee_public `Authorization`.
+     * const feeAuthorization = await programManager.buildFeeAuthorization({
+     *   deploymentOrExecutionId: executionId,
+     *   baseFeeCredits,
+     * });
+     *
+     * // Build and execute the transaction
+     * const tx = await programManager.buildTransactionFromAuthorization({
+     *   programName: "hello_hello.aleo",
+     *   authorization,
+     *   feeAuthorization,
+     * });
+     *
+     * // Submit the transaction to the network
+     * await programManager.networkClient.submitTransaction(tx.toString());
+     *
+     * // Verify the transaction was successful
+     * setTimeout(async () => {
+     *  const transaction = await programManager.networkClient.getTransaction(tx.id());
+     *  assert(transaction.id() === tx.id());
+     * }, 10000);
+     */
+    async buildTransactionFromAuthorization(
+        options: ExecuteAuthorizationOptions,
+    ): Promise<Transaction> {
+        // Destructure the options object to access the parameters.
+        const {
+            programName,
+            authorization,
+        } = options;
+
+        const feeAuthorization = options.feeAuthorization;
+        const keySearchParams = options.keySearchParams;
+        const offlineQuery = options.offlineQuery;
+        let provingKey = options.provingKey;
+        let verifyingKey = options.verifyingKey;
+        let program = options.program;
+        let imports = options.imports;
+
+        // Ensure the function exists on the network.
+        if (program === undefined) {
+            try {
+                program = <string>(
+                    await this.networkClient.getProgram(programName)
+                );
+            } catch (e: any) {
+                logAndThrow(
+                    `Error finding ${programName}. Network response: '${e.message}'. Please ensure you're connected to a valid Aleo network the program is deployed to the network.`,
+                );
+            }
+        } else if (program instanceof Program) {
+            program = program.toString();
+        }
+
+        // Get the fee proving and verifying keys from the key provider.
+        let feeKeys;
+        const privateFee = feeAuthorization ? feeAuthorization.isFeePrivate() : false;
+        try {
+            feeKeys = privateFee
+                ? <FunctionKeyPair>await this.keyProvider.feePrivateKeys()
+                : <FunctionKeyPair>await this.keyProvider.feePublicKeys();
+        } catch (e: any) {
+            logAndThrow(
+                `Error finding fee keys. Key finder response: '${e.message}'. Please ensure your key provider is configured correctly.`,
+            );
+        }
+        const [feeProvingKey, feeVerifyingKey] = feeKeys;
+
+        // If the function proving and verifying keys are not provided, attempt to find them using the key provider.
+        if (!provingKey || !verifyingKey) {
+            try {
+                [provingKey, verifyingKey] = <FunctionKeyPair>(
+                    await this.keyProvider.functionKeys(keySearchParams)
+                );
+            } catch (e) {
+                console.log(
+                    `Function keys not found. Key finder response: '${e}'. The function keys will be synthesized`,
+                );
+            }
+        }
+
+        // Resolve the program imports if they exist.
+        const numberOfImports = Program.fromString(program).getImports().length;
+        if (numberOfImports > 0 && !imports) {
+            try {
+                imports = <ProgramImports>(
+                    await this.networkClient.getProgramImports(programName)
+                );
+            } catch (e: any) {
+                logAndThrow(
+                    `Error finding program imports. Network response: '${e.message}'. Please ensure you're connected to a valid Aleo network and the program is deployed to the network.`,
+                );
+            }
+        }
+
+        // If the offline query exists, add the inclusion key.
+        if (offlineQuery && !this.inclusionKeysLoaded) {
+            try {
+                const inclusionKeys = await this.keyProvider.inclusionKeys();
+                WasmProgramManager.loadInclusionProver(inclusionKeys[0])
+                this.inclusionKeysLoaded = true;
+                console.log("Successfully loaded inclusion key");
+            } catch {
+                logAndThrow(`Inclusion key bytes not loaded, please ensure the program manager is initialized with a KeyProvider that includes the inclusion key.`)
+            }
+        }
+
+        // Build an execution transaction from the authorization.
+        return await WasmProgramManager.executeAuthorization(
+            authorization,
+            feeAuthorization,
+            program,
+            provingKey,
+            verifyingKey,
+            feeProvingKey,
+            feeVerifyingKey,
+            imports,
+            this.host,
+            offlineQuery
+        )
     }
 
     /**
@@ -650,7 +862,7 @@ class ProgramManager {
      * // Create a new NetworkClient, KeyProvider, and RecordProvider.
      * const keyProvider = new AleoKeyProvider();
      * const recordProvider = new NetworkRecordProvider(account, networkClient);
-     * keyProvider.useCache = true;
+     * keyProvider.useCache(true);
      *
      * // Initialize a ProgramManager with the key and record providers.
      * const programManager = new ProgramManager("https://api.explorer.provable.com/v1", keyProvider, recordProvider);
@@ -670,14 +882,15 @@ class ProgramManager {
     ): Promise<Authorization> {
         // Destructure the options object to access the parameters.
         const {
-            programName,
             functionName,
             inputs,
         } = options;
 
         const privateKey = options.privateKey;
         let program = options.programSource;
+        let programName = options.programName;
         let imports = options.programImports;
+        let edition = options.edition;
 
         // Ensure the function exists on the network.
         if (program === undefined) {
@@ -694,6 +907,11 @@ class ProgramManager {
             program = program.toString();
         }
 
+        // Get the program name if it is not provided in the parameters.
+        if (programName === undefined) {
+            programName = Program.fromString(program).id();
+        }
+
         // Get the private key from the account if it is not provided in the parameters.
         let executionPrivateKey = privateKey;
         if (
@@ -705,6 +923,15 @@ class ProgramManager {
 
         if (typeof executionPrivateKey === "undefined") {
             throw "No private key provided and no private key set in the ProgramManager";
+        }
+
+        if (edition == undefined) {
+            try {
+                edition = await this.networkClient.getLatestProgramEdition(programName);
+            } catch (e: any) {
+                console.warn(`Error finding edition for ${programName}. Network response: '${e.message}'. Assuming edition 1.`);
+                edition = 1;
+            }
         }
 
         // Resolve the program imports if they exist.
@@ -727,7 +954,8 @@ class ProgramManager {
             program,
             functionName,
             inputs,
-            imports
+            imports,
+            edition
         );
     }
 
@@ -744,7 +972,7 @@ class ProgramManager {
      * // Create a new NetworkClient, KeyProvider, and RecordProvider.
      * const keyProvider = new AleoKeyProvider();
      * const recordProvider = new NetworkRecordProvider(account, networkClient);
-     * keyProvider.useCache = true;
+     * keyProvider.useCache(true);
      *
      * // Initialize a ProgramManager with the key and record providers.
      * const programManager = new ProgramManager("https://api.explorer.provable.com/v1", keyProvider, recordProvider);
@@ -764,14 +992,15 @@ class ProgramManager {
     ): Promise<Authorization> {
         // Destructure the options object to access the parameters.
         const {
-            programName,
             functionName,
             inputs,
         } = options;
 
         const privateKey = options.privateKey;
         let program = options.programSource;
+        let programName = options.programName;
         let imports = options.programImports;
+        let edition = options.edition;
 
         // Ensure the function exists on the network.
         if (program === undefined) {
@@ -786,6 +1015,11 @@ class ProgramManager {
             }
         } else if (program instanceof Program) {
             program = program.toString();
+        }
+
+        // Get the program name if it is not provided in the parameters.
+        if (programName === undefined) {
+            programName = Program.fromString(program).id();
         }
 
         // Get the private key from the account if it is not provided in the parameters.
@@ -815,13 +1049,23 @@ class ProgramManager {
             }
         }
 
+        if (edition == undefined) {
+            try {
+                edition = await this.networkClient.getLatestProgramEdition(programName);
+            } catch (e: any) {
+                console.warn(`Error finding edition for ${programName}. Network response: '${e.message}'. Assuming edition 1.`);
+                edition = 1;
+            }
+        }
+
         // Build and return an `Authorization` for the desired function.
         return await WasmProgramManager.buildAuthorizationUnchecked(
             executionPrivateKey,
             program,
             functionName,
             inputs,
-            imports
+            imports,
+            edition
         );
     }
 
@@ -838,7 +1082,7 @@ class ProgramManager {
      * // Create a new NetworkClient, KeyProvider, and RecordProvider.
      * const keyProvider = new AleoKeyProvider();
      * const recordProvider = new NetworkRecordProvider(account, networkClient);
-     * keyProvider.useCache = true;
+     * keyProvider.useCache(true);
      *
      * // Initialize a ProgramManager with the key and record providers.
      * const programManager = new ProgramManager("https://api.explorer.provable.com/v1", keyProvider, recordProvider);
@@ -862,7 +1106,6 @@ class ProgramManager {
     ): Promise<ProvingRequest> {
         // Destructure the options object to access the parameters.
         const {
-            programName,
             functionName,
             baseFee,
             priorityFee,
@@ -875,8 +1118,10 @@ class ProgramManager {
 
         const privateKey = options.privateKey;
         let program = options.programSource;
+        let programName = options.programName;
         let feeRecord = options.feeRecord;
         let imports = options.programImports;
+        let edition = options.edition;
 
         // Ensure the function exists on the network.
         if (program === undefined) {
@@ -891,6 +1136,20 @@ class ProgramManager {
             }
         } else if (program instanceof Program) {
             program = program.toString();
+        }
+
+        // Get the program name if it is not provided in the parameters.
+        if (programName === undefined) {
+            programName = Program.fromString(program).id();
+        }
+
+        if (edition == undefined) {
+            try {
+                edition = await this.networkClient.getLatestProgramEdition(programName);
+            } catch (e: any) {
+                console.warn(`Error finding edition for ${programName}. Network response: '${e.message}'. Assuming edition 1.`);
+                edition = 1;
+            }
         }
 
         // Get the private key from the account if it is not provided in the parameters.
@@ -909,14 +1168,12 @@ class ProgramManager {
         // Get the fee record from the account if it is not provided in the parameters.
         try {
             feeRecord = privateFee
-                ? <RecordPlaintext>(
-                    await this.getCreditsRecord(
+                ? RecordPlaintext.fromString((await this.getCreditsRecord(
                         priorityFee,
                         [],
                         feeRecord,
                         recordSearchParams,
-                    )
-                )
+                    )).record_plaintext?? '')
                 : undefined;
         } catch (e: any) {
             logAndThrow(
@@ -949,7 +1206,8 @@ class ProgramManager {
             feeRecord,
             imports,
             broadcast,
-            unchecked
+            unchecked,
+            edition
         );
     }
 
@@ -966,20 +1224,20 @@ class ProgramManager {
      * // Create a new NetworkClient, KeyProvider, and RecordProvider.
      * const keyProvider = new AleoKeyProvider();
      * const recordProvider = new NetworkRecordProvider(account, networkClient);
-     * keyProvider.useCache = true;
+     * keyProvider.useCache(true);
      *
      * // Initialize a ProgramManager with the key and record providers.
      * const programManager = new ProgramManager("https://api.explorer.provable.com/v1", keyProvider, recordProvider);
      *
      * // Build a credits.aleo/fee_public `Authorization`.
-     * const feePublicAuthorization = await programManager.authorizeFee({
+     * const feePublicAuthorization = await programManager.buildFeeAuthorization({
      *   deploymentOrExecutionId: "2423957656946557501636078245035919227529640894159332581642187482178647335171field",
      *   baseFeeCredits: 0.1,
      * });
      *
      * // Build a credits.aleo/fee_private `Authorization`.
      * const record = "{ owner: aleo1j7qxyunfldj2lp8hsvy7mw5k8zaqgjfyr72x2gh3x4ewgae8v5gscf5jh3.private, microcredits: 1500000000000000u64.private, _nonce: 3077450429259593211617823051143573281856129402760267155982965992208217472983group.public }";
-     * const feePrivateAuthorization = await programManager.authorizeFee({
+     * const feePrivateAuthorization = await programManager.buildFeeAuthorization({
      *   deploymentOrExecutionId: "2423957656946557501636078245035919227529640894159332581642187482178647335171field",
      *   baseFeeCredits: 0.1,
      *   feeRecord: record,
@@ -1033,7 +1291,7 @@ class ProgramManager {
      * // Create a new NetworkClient, KeyProvider, and RecordProvider using official Aleo record, key, and network providers
      * const keyProvider = new AleoKeyProvider();
      * const recordProvider = new NetworkRecordProvider(account, networkClient);
-     * keyProvider.useCache = true;
+     * keyProvider.useCache(true);
      *
      * // Initialize a program manager with the key provider to automatically fetch keys for executions
      * const programManager = new ProgramManager("https://api.explorer.provable.com/v1", keyProvider, recordProvider);
@@ -1118,6 +1376,7 @@ class ProgramManager {
         verifyingKey?: VerifyingKey,
         privateKey?: PrivateKey,
         offlineQuery?: OfflineQuery,
+        edition?: number
     ): Promise<ExecutionResponse> {
         // Get the private key from the account if it is not provided in the parameters
         let executionPrivateKey = privateKey;
@@ -1161,6 +1420,7 @@ class ProgramManager {
             verifyingKey,
             this.host,
             offlineQuery,
+            edition
         );
     }
 
@@ -1184,7 +1444,7 @@ class ProgramManager {
      * // Create a new NetworkClient, KeyProvider, and RecordProvider
      * const keyProvider = new AleoKeyProvider();
      * const recordProvider = new NetworkRecordProvider(account, networkClient);
-     * keyProvider.useCache = true;
+     * keyProvider.useCache(true);
      *
      * // Initialize a program manager with the key provider to automatically fetch keys for executions
      * const programManager = new ProgramManager("https://api.explorer.provable.com/v1", keyProvider, recordProvider);
@@ -1244,14 +1504,12 @@ class ProgramManager {
         // Get the fee record from the account if it is not provided in the parameters
         try {
             feeRecord = privateFee
-                ? <RecordPlaintext>(
-                    await this.getCreditsRecord(
+                ? RecordPlaintext.fromString((await this.getCreditsRecord(
                         priorityFee,
                         [],
                         feeRecord,
                         recordSearchParams,
-                    )
-                )
+                    )).record_plaintext?? '')
                 : undefined;
         } catch (e: any) {
             logAndThrow(
@@ -1273,6 +1531,18 @@ class ProgramManager {
             logAndThrow(
                 "Records provided are not valid. Please ensure they are valid plaintext records.",
             );
+        }
+
+        // Load the inclusion prover offline.
+        if (offlineQuery && !this.inclusionKeysLoaded) {
+            try {
+                const inclusionKeys = await this.keyProvider.inclusionKeys();
+                WasmProgramManager.loadInclusionProver(inclusionKeys[0])
+                this.inclusionKeysLoaded = true;
+                console.log("Successfully loaded inclusion key");
+            } catch {
+                logAndThrow(`Inclusion key bytes not loaded, please ensure the program manager is initialized with a KeyProvider that includes the inclusion key.`)
+            }
         }
 
         // Build an execution transaction and submit it to the network
@@ -1312,7 +1582,7 @@ class ProgramManager {
      * // Create a new NetworkClient, KeyProvider, and RecordProvider
      * const keyProvider = new AleoKeyProvider();
      * const recordProvider = new NetworkRecordProvider(account, networkClient);
-     * keyProvider.useCache = true;
+     * keyProvider.useCache(true);
      *
      * // Initialize a program manager with the key provider to automatically fetch keys for executions
      * const programManager = new ProgramManager("https://api.explorer.provable.com/v1", keyProvider, recordProvider);
@@ -1365,6 +1635,18 @@ class ProgramManager {
             logAndThrow(
                 "Record provided is not valid. Please ensure it is a valid plaintext record.",
             );
+        }
+
+        // Load the inclusion prover offline.
+        if (offlineQuery && !this.inclusionKeysLoaded) {
+            try {
+                const inclusionKeys = await this.keyProvider.inclusionKeys();
+                WasmProgramManager.loadInclusionProver(inclusionKeys[0])
+                this.inclusionKeysLoaded = true;
+                console.log("Successfully loaded inclusion key");
+            } catch {
+                logAndThrow(`Inclusion key bytes not loaded, please ensure the program manager is initialized with a KeyProvider that includes the inclusion key.`)
+            }
         }
 
         // Build an execution transaction and submit it to the network
@@ -1452,7 +1734,7 @@ class ProgramManager {
      * // Create a new NetworkClient, KeyProvider, and RecordProvider
      * const keyProvider = new AleoKeyProvider();
      * const recordProvider = new NetworkRecordProvider(account, networkClient);
-     * keyProvider.useCache = true;
+     * keyProvider.useCache(true);
      *
      * // Initialize a program manager with the key provider to automatically fetch keys for executions
      * const programManager = new ProgramManager("https://api.explorer.provable.com/v1", keyProvider, recordProvider);
@@ -1517,32 +1799,42 @@ class ProgramManager {
             const nonces: string[] = [];
             if (requiresAmountRecord(transferType)) {
                 // If the transfer type is private and requires an amount record, get it from the record provider
-                amountRecord = <RecordPlaintext>(
-                    await this.getCreditsRecord(
+                amountRecord = RecordPlaintext.fromString((await this.getCreditsRecord(
                         priorityFee,
                         [],
                         amountRecord,
                         recordSearchParams,
-                    )
-                );
+                    )).record_plaintext?? '');
                 nonces.push(amountRecord.nonce());
             } else {
                 amountRecord = undefined;
             }
             feeRecord = privateFee
-                ? <RecordPlaintext>(
-                    await this.getCreditsRecord(
+                ? RecordPlaintext.fromString((await this.getCreditsRecord(
                         priorityFee,
                         nonces,
                         feeRecord,
                         recordSearchParams,
-                    )
-                )
+                    )).record_plaintext?? '')
                 : undefined;
         } catch (e: any) {
             logAndThrow(
                 `Error finding fee record. Record finder response: '${e.message}'. Please ensure you're connected to a valid Aleo network and a record with enough balance exists.`,
             );
+        }
+
+        // Load the inclusion prover offline.
+        if (offlineQuery && !this.inclusionKeysLoaded) {
+            const inclusionKeys = await this.keyProvider.inclusionKeys();
+            WasmProgramManager.loadInclusionProver(inclusionKeys[0])
+            try {
+                const inclusionKeys = await this.keyProvider.inclusionKeys();
+                WasmProgramManager.loadInclusionProver(inclusionKeys[0])
+                this.inclusionKeysLoaded = true;
+                console.log("Successfully loaded inclusion key");
+            } catch {
+                logAndThrow(`Inclusion key bytes not loaded, please ensure the program manager is initialized with a KeyProvider that includes the inclusion key.`)
+            }
         }
 
         // Build an execution transaction
@@ -1580,7 +1872,7 @@ class ProgramManager {
      * // Create a new NetworkClient, KeyProvider, and RecordProvider
      * const keyProvider = new AleoKeyProvider();
      * const recordProvider = new NetworkRecordProvider(account, networkClient);
-     * keyProvider.useCache = true;
+     * keyProvider.useCache(true);
      *
      * // Initialize a program manager with the key provider to automatically fetch keys for executions
      * const programManager = new ProgramManager("https://api.explorer.provable.com/v1", keyProvider, recordProvider);
@@ -1631,7 +1923,7 @@ class ProgramManager {
      * // Create a new NetworkClient, KeyProvider, and RecordProvider
      * const keyProvider = new AleoKeyProvider();
      * const recordProvider = new NetworkRecordProvider(account, networkClient);
-     * keyProvider.useCache = true;
+     * keyProvider.useCache(true);
      *
      * // Initialize a program manager with the key provider to automatically fetch keys for executions
      * const programManager = new ProgramManager("https://api.explorer.provable.com/v1", keyProvider, recordProvider);
@@ -1687,7 +1979,7 @@ class ProgramManager {
      * // Create a new NetworkClient, KeyProvider, and RecordProvider
      * const keyProvider = new AleoKeyProvider();
      * const recordProvider = new NetworkRecordProvider(account, networkClient);
-     * keyProvider.useCache = true;
+     * keyProvider.useCache(true);
      *
      * // Initialize a program manager with the key provider to automatically fetch keys for executions
      * const programManager = new ProgramManager("https://api.explorer.provable.com/v1", keyProvider, recordProvider);
@@ -1759,7 +2051,7 @@ class ProgramManager {
      *
      * // Create a keyProvider to handle key management
      * const keyProvider = new AleoKeyProvider();
-     * keyProvider.useCache = true;
+     * keyProvider.useCache(true);
      *
      * // Create a new ProgramManager with the key that will be used to bond credits
      * const programManager = new ProgramManager("https://api.explorer.provable.com/v1", keyProvider, undefined);
@@ -1811,6 +2103,7 @@ class ProgramManager {
             privateFee,
             inputs,
             keySearchParams,
+            program,
             ...additionalOptions,
         };
 
@@ -1832,7 +2125,7 @@ class ProgramManager {
      *
      * // Create a keyProvider to handle key management
      * const keyProvider = new AleoKeyProvider();
-     * keyProvider.useCache = true;
+     * keyProvider.useCache(true);
      *
      * // Create a new ProgramManager with the key that will be used to bond credits
      * const programManager = new ProgramManager("https://api.explorer.provable.com/v1", keyProvider, undefined);
@@ -1895,7 +2188,7 @@ class ProgramManager {
      *
      * // Create a keyProvider to handle key management
      * const keyProvider = new AleoKeyProvider();
-     * keyProvider.useCache = true;
+     * keyProvider.useCache(true);
      *
      * // Create a new ProgramManager with the key that will be used to bond credits
      * const programManager = new ProgramManager("https://api.explorer.provable.com/v1", keyProvider, undefined);
@@ -1951,6 +2244,7 @@ class ProgramManager {
             privateFee,
             inputs,
             keySearchParams,
+            program,
             ...additionalOptions,
         };
 
@@ -1973,7 +2267,7 @@ class ProgramManager {
      *
      * // Create a keyProvider to handle key management
      * const keyProvider = new AleoKeyProvider();
-     * keyProvider.useCache = true;
+     * keyProvider.useCache(true);
      *
      * // Create a new ProgramManager with the key that will be used to bond credits
      * const programManager = new ProgramManager("https://api.explorer.provable.com/v1", keyProvider, undefined);
@@ -2037,7 +2331,7 @@ class ProgramManager {
      *
      * // Create a keyProvider to handle key management.
      * const keyProvider = new AleoKeyProvider();
-     * keyProvider.useCache = true;
+     * keyProvider.useCache(true);
      *
      * // Create a new ProgramManager with the key that will be used to unbond credits.
      * const programManager = new ProgramManager("https://api.explorer.provable.com/v1", keyProvider, undefined);
@@ -2081,6 +2375,7 @@ class ProgramManager {
             privateFee,
             inputs,
             keySearchParams,
+            program,
             ...additionalOptions,
         };
 
@@ -2106,7 +2401,7 @@ class ProgramManager {
      *
      * // Create a keyProvider to handle key management
      * const keyProvider = new AleoKeyProvider();
-     * keyProvider.useCache = true;
+     * keyProvider.useCache(true);
      *
      * // Create a new ProgramManager with the key that will be used to bond credits
      * const programManager = new ProgramManager("https://api.explorer.provable.com/v1", keyProvider, undefined);
@@ -2165,7 +2460,7 @@ class ProgramManager {
      *
      * // Create a keyProvider to handle key management
      * const keyProvider = new AleoKeyProvider();
-     * keyProvider.useCache = true;
+     * keyProvider.useCache(true);
      *
      * // Create a new ProgramManager with the key that will be used to claim unbonded credits.
      * const programManager = new ProgramManager("https://api.explorer.provable.com/v1", keyProvider, undefined);
@@ -2208,6 +2503,7 @@ class ProgramManager {
             privateFee,
             inputs,
             keySearchParams,
+            program,
             ...additionalOptions,
         };
 
@@ -2229,7 +2525,7 @@ class ProgramManager {
      *
      * // Create a keyProvider to handle key management
      * const keyProvider = new AleoKeyProvider();
-     * keyProvider.useCache = true;
+     * keyProvider.useCache(true);
      *
      * // Create a new ProgramManager with the key that will be used to bond credits
      * const programManager = new ProgramManager("https://api.explorer.provable.com/v1", keyProvider, undefined);
@@ -2294,7 +2590,7 @@ class ProgramManager {
      *
      * // Create a keyProvider to handle key management
      * const keyProvider = new AleoKeyProvider();
-     * keyProvider.useCache = true;
+     * keyProvider.useCache(true);
      *
      * // Create a new ProgramManager with the key that will be used to bond credits
      * const programManager = new ProgramManager("https://api.explorer.provable.com/v1", keyProvider, undefined);
@@ -2326,6 +2622,7 @@ class ProgramManager {
                 verifierUri: CREDITS_PROGRAM_KEYS.set_validator_state.verifier,
                 cacheKey: "credits.aleo/set_validator_state",
             }),
+            program = this.creditsProgram(),
             ...additionalOptions
         } = options;
 
@@ -2336,6 +2633,7 @@ class ProgramManager {
             privateFee,
             inputs,
             keySearchParams,
+            program,
             ...additionalOptions,
         };
 
@@ -2363,7 +2661,7 @@ class ProgramManager {
      *
      * // Create a keyProvider to handle key management
      * const keyProvider = new AleoKeyProvider();
-     * keyProvider.useCache = true;
+     * keyProvider.useCache(true);
      *
      * // Create a new ProgramManager with the key that will be used to bond credits
      * const programManager = new ProgramManager("https://api.explorer.provable.com/v1", keyProvider, undefined);
@@ -2466,6 +2764,15 @@ class ProgramManager {
     }
 
     /**
+     * Set the inclusion key bytes.
+     *
+     * @param {executionResponse} executionResponse The response from an offline function execution (via the `programManager.run` method)
+     * @param {ImportedPrograms} imports The imported programs used in the execution. Specified as { "programName": "programSourceCode", ... }
+     * @param {ImportedVerifyingKeys} importedVerifyingKeys The verifying keys in the execution. Specified as { "programName": [["functionName", "verifyingKey"], ...], ... }
+     * @returns {boolean} True if the proof is valid, false otherwise
+     *
+
+    /**
      * Create a program object from a program's source code
      *
      * @param {string} program Program source code
@@ -2504,21 +2811,25 @@ class ProgramManager {
         nonces: string[],
         record?: RecordPlaintext | string,
         params?: RecordSearchParams,
-    ): Promise<RecordPlaintext> {
+    ): Promise<OwnedRecord> {
         try {
-            return record instanceof RecordPlaintext
-                ? record
-                : RecordPlaintext.fromString(<string>record);
+            // return record instanceof RecordPlaintext
+            //     ? record
+            //     : RecordPlaintext.fromString(<string>record);
+            if (record && record instanceof RecordPlaintext) {
+                record = record.toString();
+            }
+            return <OwnedRecord>({
+                recordPlaintext: record,
+                programName: 'credits.aleo',
+                recordName: 'credits',
+            })
         } catch (e) {
             try {
                 const recordProvider = <RecordProvider>this.recordProvider;
-                return <RecordPlaintext>(
-                    await recordProvider.findCreditsRecord(
-                        amount,
-                        true,
-                        nonces,
-                        params,
-                    )
+                return await recordProvider.findCreditsRecord(
+                    amount,
+                    { ...params, unspent: true, nonces }
                 );
             } catch (e: any) {
                 logAndThrow(

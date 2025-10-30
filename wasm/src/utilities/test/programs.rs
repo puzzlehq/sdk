@@ -18,6 +18,20 @@ use crate::{array, object};
 
 use js_sys::{Array, Object};
 
+pub const EXTERNAL_RECORDS_DEMO: &str = r#"
+import token_registry.aleo;
+program external_record_test.aleo;
+
+function deposit_private_token:
+    input r0 as address.private;
+    input r1 as u128.private;
+    input r2 as token_registry.aleo/Token.record;
+    output r2 as token_registry.aleo/Token.record;
+
+constructor:
+    assert.eq program_owner aleo1rhgdu77hgyqd3xjj8ucu3jj9r2krwz6mnzyd80gncr5fxcwlh5rsvzp9px;
+"#;
+
 pub const HELLO_PROGRAM: &str = r#"program hello.aleo;
 function main:
     input r0 as u32.public;

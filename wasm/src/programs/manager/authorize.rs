@@ -48,6 +48,7 @@ impl ProgramManager {
         function_name: &str,
         inputs: Array,
         imports: Option<Object>,
+        edition: Option<u16>,
     ) -> Result<Authorization, String> {
         let mut process_native = ProcessNative::load_web().map_err(|err| err.to_string())?;
         let process = &mut process_native;
@@ -59,6 +60,7 @@ impl ProgramManager {
         let rng = &mut StdRng::from_entropy();
 
         // Authorize the main program.
+        let edition = edition.unwrap_or(1);
         let unchecked = false;
         let authorization = Authorization::from(authorize!(
             process,
@@ -67,7 +69,8 @@ impl ProgramManager {
             function_name,
             private_key,
             rng,
-            unchecked
+            unchecked,
+            edition
         ));
         Ok(authorization)
     }
@@ -87,6 +90,7 @@ impl ProgramManager {
         function_name: &str,
         inputs: Array,
         imports: Option<Object>,
+        edition: Option<u16>,
     ) -> Result<Authorization, String> {
         let mut process_native = ProcessNative::load_web().map_err(|err| err.to_string())?;
         let process = &mut process_native;
@@ -99,6 +103,7 @@ impl ProgramManager {
 
         // Authorize the main program.
         let unchecked = true;
+        let edition = edition.unwrap_or(1);
         let authorization = Authorization::from(authorize!(
             process,
             process_inputs!(inputs),
@@ -106,7 +111,8 @@ impl ProgramManager {
             function_name,
             private_key,
             rng,
-            unchecked
+            unchecked,
+            edition
         ));
         Ok(authorization)
     }
@@ -172,7 +178,9 @@ mod tests {
 
         // Create the puzzle spinner authorization and ensure it has the correct amount of transitions.
         let authorization =
-            ProgramManager::authorize(&private_key, PUZZLE_SPINNER_V002, function_name, inputs, imports).await.unwrap();
+            ProgramManager::authorize(&private_key, PUZZLE_SPINNER_V002, function_name, inputs, imports, None)
+                .await
+                .unwrap();
         console_log!("{authorization:?}");
 
         // Ensure the number of requests is correct.

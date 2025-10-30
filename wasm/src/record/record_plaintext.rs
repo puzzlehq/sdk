@@ -17,6 +17,7 @@
 use crate::{
     Address,
     Credits,
+    EncryptionToolkit,
     GraphKey,
     Plaintext,
     PrivateKey,
@@ -255,7 +256,7 @@ impl RecordPlaintext {
         RecordPlaintextNative::tag(*graph_key.sk_tag(), *commitment).map_err(|e| e.to_string()).map(Field::from)
     }
 
-    /// Generate the record view key. The record view key can only decrypt record if the
+    /// Generate the record view key. The record view key can only decrypt the record if the
     /// supplied view key belongs to the record owner.
     ///
     /// @param {ViewKey} view_key View key used to generate the record view key
@@ -264,6 +265,26 @@ impl RecordPlaintext {
     #[wasm_bindgen(js_name = "recordViewKey")]
     pub fn record_view_key(&self, view_key: &ViewKey) -> Field {
         Group::from_string(&self.nonce()).unwrap().scalar_multiply(&view_key.to_scalar()).to_x_coordinate()
+    }
+
+    /// Decrypt the sender ciphertext associated with the record.
+    ///
+    /// @param {ViewKey} view_key View key associated with the record.
+    /// @param {Field} sender_ciphertext Sender ciphertext associated with the record.
+    ///
+    /// @returns {Address} address of the sender.
+    #[wasm_bindgen(js_name = decryptSender)]
+    pub fn decrypt_sender(&self, view_key: &ViewKey, sender_ciphertext: &Field) -> Result<Address, String> {
+        let record_view_key = self.record_view_key(view_key);
+        EncryptionToolkit::decrypt_sender_with_rvk(&record_view_key, sender_ciphertext)
+    }
+
+    /// Clone the RecordPlaintext WASM object.
+    ///
+    /// @returns {RecordPlaintext} A clone of the RecordPlaintext WASM object.
+    #[allow(clippy::should_implement_trait)]
+    pub fn clone(&self) -> RecordPlaintext {
+        RecordPlaintext(self.0.clone())
     }
 }
 
@@ -311,6 +332,12 @@ impl FromStr for RecordPlaintext {
 mod tests {
     use super::*;
 
+    use crate::{
+        types::native::{PrivateKeyNative, ViewKeyNative},
+        utilities::test::get_env,
+    };
+
+    use crate::utilities::test::records::{CREDITS_RECORD_V1, CREDITS_SENDER_CIPHERTEXT, CREDITS_SENDER_PLAINTEXT};
     use wasm_bindgen_test::*;
 
     const CREDITS_RECORD: &str = r"{
@@ -339,6 +366,13 @@ mod tests {
     fn test_to_and_from_string() {
         let record = RecordPlaintext::from_string(CREDITS_RECORD).unwrap();
         assert_eq!(record.to_string(), CREDITS_RECORD);
+    }
+
+    #[wasm_bindgen_test]
+    fn test_clone() {
+        let record = RecordPlaintext::from_string(CREDITS_RECORD).unwrap();
+        let cloned_record = record.clone();
+        assert_eq!(record.to_string(), cloned_record.to_string());
     }
 
     #[wasm_bindgen_test]
@@ -433,5 +467,20 @@ mod tests {
             Some("The record plaintext string provided was invalid".into())
         );
         assert!(RecordPlaintext::from_string(invalid_bech32).is_err());
+    }
+
+    #[wasm_bindgen_test]
+    fn test_record_decrypt_record_sender_ciphertext() {
+        // Get the private key corresponding to the record.
+        let private_key = PrivateKeyNative::from_str(&get_env("PUZZLE_PK")).unwrap();
+        let view_key = ViewKey::from(ViewKeyNative::try_from(private_key).unwrap());
+
+        // Construct the record and the sender ciphertext.
+        let record = RecordPlaintext::from_string(CREDITS_RECORD_V1).unwrap();
+        let sender_ciphertext = Field::from_string(CREDITS_SENDER_CIPHERTEXT).unwrap();
+
+        // Decrypt the sender ciphertext and ensure it's from the expected address.
+        let sender = record.decrypt_sender(&view_key, &sender_ciphertext).unwrap();
+        assert_eq!(sender.to_string(), CREDITS_SENDER_PLAINTEXT.to_string());
     }
 }

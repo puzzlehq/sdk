@@ -173,18 +173,19 @@ self.addEventListener("message", (ev) => {
                     programManager.keyProvider.cacheKeys(cacheKey, keys);
                 }
 
+                let edition = 1;
+                try {
+                    edition = programManager.networkClient.getLatestProgramEdition(program_id);
+                } catch {
+                    console.warn(`Error finding edition for ${program_id}. Assuming edition 1.`);
+                }
+
                 // Estimate the execution fee
-                const [provingKey, verifyingKey] = programManager.keyProvider.getKeys(cacheKey);
                 let executeFee = await aleo.ProgramManagerBase.estimateExecutionFee(
-                    privateKeyObject,
                     remoteProgram,
                     aleoFunction,
-                    inputs,
-                    url,
                     imports,
-                    provingKey,
-                    verifyingKey,
-                    undefined
+                    edition
                 );
 
                 // Return the execution fee estimate to the main thread
