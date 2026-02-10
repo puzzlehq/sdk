@@ -159,7 +159,7 @@ impl Eq for ProvingRequest {}
 mod tests {
     use super::*;
     use crate::{
-        types::native::CurrentNetwork,
+        types::native::
         utilities::test::{PUZZLE_SPINNER_V002_AUTHORIZATION, PUZZLE_SPINNER_V002_PROVING_REQUEST},
     };
     use snarkvm_wasm::console::network::Network;

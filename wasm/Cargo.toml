@@ -157,3 +157,6 @@ strip = true
 opt-level = 3
 lto = "thin"
 incremental = true
+
+[package.metadata.wasm-pack]
+wasm-opt = false

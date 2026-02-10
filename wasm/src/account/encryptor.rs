@@ -15,8 +15,9 @@
 // along with the Provable SDK library. If not, see <https://www.gnu.org/licenses/>.
 
 use crate::types::native::{
-    CiphertextNative,
     CurrentNetwork,
+    CiphertextNative,
+    
     FieldNative,
     IdentifierNative,
     LiteralNative,

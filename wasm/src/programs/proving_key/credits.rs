@@ -15,6 +15,7 @@
 // along with the Provable SDK library. If not, see <https://www.gnu.org/licenses/>.
 
 use super::*;
+use crate::types::native::parameters;
 
 #[wasm_bindgen]
 impl ProvingKey {
@@ -33,7 +34,7 @@ impl ProvingKey {
     /// @returns {boolean} returns true if the proving key is for the bond_public function, false if otherwise
     #[wasm_bindgen(js_name = "isBondPublicProver")]
     pub fn is_bond_public_prover(&self) -> bool {
-        self.checksum() == ProvingKey::prover_checksum(crate::types::native::parameters::BondPublicProver::METADATA)
+        self.checksum() == ProvingKey::prover_checksum(parameters::BondPublicProver::METADATA)
     }
 
     /// Verify if the proving key is for the bond_validator function
@@ -45,7 +46,7 @@ impl ProvingKey {
     /// @returns {boolean} returns true if the proving key is for the bond_validator function, false if otherwise
     #[wasm_bindgen(js_name = "isBondValidatorProver")]
     pub fn is_bond_validator_prover(&self) -> bool {
-        self.checksum() == ProvingKey::prover_checksum(crate::types::native::parameters::BondValidatorProver::METADATA)
+        self.checksum() == ProvingKey::prover_checksum(parameters::BondValidatorProver::METADATA)
     }
 
     /// Verify if the proving key is for the claim_unbond function
@@ -58,7 +59,7 @@ impl ProvingKey {
     #[wasm_bindgen(js_name = "isClaimUnbondPublicProver")]
     pub fn is_claim_unbond_public_prover(&self) -> bool {
         self.checksum()
-            == ProvingKey::prover_checksum(crate::types::native::parameters::ClaimUnbondPublicProver::METADATA)
+            == ProvingKey::prover_checksum(parameters::ClaimUnbondPublicProver::METADATA)
     }
 
     /// Verify if the proving key is for the fee_private function
@@ -70,7 +71,7 @@ impl ProvingKey {
     /// @returns {boolean} returns true if the proving key is for the fee_private function, false if otherwise
     #[wasm_bindgen(js_name = "isFeePrivateProver")]
     pub fn is_fee_private_prover(&self) -> bool {
-        self.checksum() == ProvingKey::prover_checksum(crate::types::native::parameters::FeePrivateProver::METADATA)
+        self.checksum() == ProvingKey::prover_checksum(parameters::FeePrivateProver::METADATA)
     }
 
     /// Verify if the proving key is for the fee_public function
@@ -82,7 +83,7 @@ impl ProvingKey {
     /// @returns {boolean} returns true if the proving key is for the fee_public function, false if otherwise
     #[wasm_bindgen(js_name = "isFeePublicProver")]
     pub fn is_fee_public_prover(&self) -> bool {
-        self.checksum() == ProvingKey::prover_checksum(crate::types::native::parameters::FeePublicProver::METADATA)
+        self.checksum() == ProvingKey::prover_checksum(parameters::FeePublicProver::METADATA)
     }
 
     /// Verify if the proving key is for the inclusion function
@@ -94,7 +95,7 @@ impl ProvingKey {
     /// @returns {boolean} returns true if the proving key is for the inclusion function, false if otherwise
     #[wasm_bindgen(js_name = "isInclusionProver")]
     pub fn is_inclusion_prover(&self) -> bool {
-        self.checksum() == ProvingKey::prover_checksum(crate::types::native::parameters::InclusionProver::METADATA)
+        self.checksum() == ProvingKey::prover_checksum(parameters::InclusionProver::METADATA)
     }
 
     /// Verify if the proving key is for the join function
@@ -106,7 +107,7 @@ impl ProvingKey {
     /// @returns {boolean} returns true if the proving key is for the join function, false if otherwise
     #[wasm_bindgen(js_name = "isJoinProver")]
     pub fn is_join_prover(&self) -> bool {
-        self.checksum() == ProvingKey::prover_checksum(crate::types::native::parameters::JoinProver::METADATA)
+        self.checksum() == ProvingKey::prover_checksum(parameters::JoinProver::METADATA)
     }
 
     /// Verify if the proving key is for the set_validator_state function
@@ -119,7 +120,7 @@ impl ProvingKey {
     #[wasm_bindgen(js_name = "isSetValidatorStateProver")]
     pub fn is_set_validator_state_prover(&self) -> bool {
         self.checksum()
-            == ProvingKey::prover_checksum(crate::types::native::parameters::SetValidatorStateProver::METADATA)
+            == ProvingKey::prover_checksum(parameters::SetValidatorStateProver::METADATA)
     }
 
     /// Verify if the proving key is for the split function
@@ -131,7 +132,7 @@ impl ProvingKey {
     /// @returns {boolean} returns true if the proving key is for the split function, false if otherwise
     #[wasm_bindgen(js_name = "isSplitProver")]
     pub fn is_split_prover(&self) -> bool {
-        self.checksum() == ProvingKey::prover_checksum(crate::types::native::parameters::SplitProver::METADATA)
+        self.checksum() == ProvingKey::prover_checksum(parameters::SplitProver::METADATA)
     }
 
     /// Verify if the proving key is for the transfer_private function
@@ -144,7 +145,7 @@ impl ProvingKey {
     #[wasm_bindgen(js_name = "isTransferPrivateProver")]
     pub fn is_transfer_private_prover(&self) -> bool {
         self.checksum()
-            == ProvingKey::prover_checksum(crate::types::native::parameters::TransferPrivateProver::METADATA)
+            == ProvingKey::prover_checksum(parameters::TransferPrivateProver::METADATA)
     }
 
     /// Verify if the proving key is for the transfer_private_to_public function
@@ -157,7 +158,7 @@ impl ProvingKey {
     #[wasm_bindgen(js_name = "isTransferPrivateToPublicProver")]
     pub fn is_transfer_private_to_public_prover(&self) -> bool {
         self.checksum()
-            == ProvingKey::prover_checksum(crate::types::native::parameters::TransferPrivateToPublicProver::METADATA)
+            == ProvingKey::prover_checksum(parameters::TransferPrivateToPublicProver::METADATA)
     }
 
     /// Verify if the proving key is for the transfer_public function
@@ -169,7 +170,7 @@ impl ProvingKey {
     /// @returns {boolean} returns true if the proving key is for the transfer_public function, false if otherwise
     #[wasm_bindgen(js_name = "isTransferPublicProver")]
     pub fn is_transfer_public_prover(&self) -> bool {
-        self.checksum() == ProvingKey::prover_checksum(crate::types::native::parameters::TransferPublicProver::METADATA)
+        self.checksum() == ProvingKey::prover_checksum(parameters::TransferPublicProver::METADATA)
     }
 
     /// Verify if the proving key is for the transfer_public_as_signer function
@@ -182,7 +183,7 @@ impl ProvingKey {
     #[wasm_bindgen(js_name = "isTransferPublicAsSignerProver")]
     pub fn is_transfer_public_as_signer_prover(&self) -> bool {
         self.checksum()
-            == ProvingKey::prover_checksum(crate::types::native::parameters::TransferPublicAsSignerProver::METADATA)
+            == ProvingKey::prover_checksum(parameters::TransferPublicAsSignerProver::METADATA)
     }
 
     /// Verify if the proving key is for the transfer_public_to_private function
@@ -195,7 +196,7 @@ impl ProvingKey {
     #[wasm_bindgen(js_name = "isTransferPublicToPrivateProver")]
     pub fn is_transfer_public_to_private_prover(&self) -> bool {
         self.checksum()
-            == ProvingKey::prover_checksum(crate::types::native::parameters::TransferPublicToPrivateProver::METADATA)
+            == ProvingKey::prover_checksum(parameters::TransferPublicToPrivateProver::METADATA)
     }
 
     /// Verify if the proving key is for the unbond_public function
@@ -207,7 +208,7 @@ impl ProvingKey {
     /// @returns {boolean} returns true if the proving key is for the unbond_public_prover function, false if otherwise
     #[wasm_bindgen(js_name = "isUnbondPublicProver")]
     pub fn is_unbond_public_prover(&self) -> bool {
-        self.checksum() == ProvingKey::prover_checksum(crate::types::native::parameters::UnbondPublicProver::METADATA)
+        self.checksum() == ProvingKey::prover_checksum(parameters::UnbondPublicProver::METADATA)
     }
 }
 

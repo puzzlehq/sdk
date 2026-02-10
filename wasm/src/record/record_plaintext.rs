@@ -107,7 +107,7 @@ impl RecordPlaintext {
     /// @returns {Address} Address of the owner of the record.
     pub fn owner(&self) -> Result<Address, String> {
         match self.0.owner() {
-            Owner::<CurrentNetwork, PlaintextNative>::Public(owner) => Ok(Address::from(*owner)),
+            Owner::<CurrentNetwork, PlaintextNative>::Public(owner) => Ok(Address::from(&*owner)),
             _ => Err("Record is not public".to_string()),
         }
     }

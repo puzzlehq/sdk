@@ -275,8 +275,8 @@ macro_rules! execute_fee {
             trace.prepare_async(&query).await.map_err(|err| err.to_string())?;
             query.current_block_height().map_err(|e| e.to_string())?
         };
-        let consensus_version = <CurrentNetwork as Network>::CONSENSUS_VERSION(latest_height).map_err(|err| err.to_string())?;
-        let inclusion_upgrade_height = <CurrentNetwork as Network>::INCLUSION_UPGRADE_HEIGHT().map_err(|err| err.to_string())?;
+        let consensus_version = <$crate::types::native::CurrentNetwork as ::snarkvm_console::network::Network>::CONSENSUS_VERSION(latest_height).map_err(|err| err.to_string())?;
+        let inclusion_upgrade_height = <$crate::types::native::CurrentNetwork as ::snarkvm_console::network::Network>::INCLUSION_UPGRADE_HEIGHT().map_err(|err| err.to_string())?;
         let inclusion_version = if latest_height >= inclusion_upgrade_height {
             ::snarkvm_synthesizer::prelude::InclusionVersion::V1
         } else {
@@ -307,7 +307,7 @@ macro_rules! calculate_minimum_fee {
 
         // Calculate the execution cost based on the consensus version.
         let consensus_version =
-            <CurrentNetwork as Network>::CONSENSUS_VERSION(block_height).map_err(|e| e.to_string())?;
+            <$crate::types::native::CurrentNetwork as ::snarkvm_console::network::Network>::CONSENSUS_VERSION(block_height).map_err(|e| e.to_string())?;
         let (minimum_execution_cost, (_, _)) =
             execution_cost($process, $execution_ref, consensus_version).map_err(|err| err.to_string())?;
         minimum_execution_cost

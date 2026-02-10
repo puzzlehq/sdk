@@ -22,13 +22,12 @@ use crate::{
     from_js_typed_array,
     from_wasm_object_array,
     js_array_from_fields,
-    native::{CiphertextNative, CurrentNetwork, FieldNative, IdentifierNative, ProgramIDNative},
+    native::{CurrentNetwork, CiphertextNative, FieldNative, IdentifierNative, ProgramIDNative, U16Native},
     to_bits_array_le,
 };
 use snarkvm_console::{
     network::Network,
     program::{FromBits, FromFields, ToBits, ToFields, compute_function_id},
-    types::U16,
 };
 use snarkvm_wasm::utilities::{FromBytes, ToBytes};
 
@@ -78,7 +77,7 @@ impl Ciphertext {
         let program_id = ProgramIDNative::from_str(&program).map_err(|e| e.to_string())?;
         let function_name = IdentifierNative::from_str(&function_name).map_err(|e| e.to_string())?;
         let function_id =
-            compute_function_id(&U16::<CurrentNetwork>::new(CurrentNetwork::ID), &program_id, &function_name)
+            compute_function_id(&U16Native::new(CurrentNetwork::ID), &program_id, &function_name)
                 .map_err(|e| e.to_string())?;
         let tvk = transition_public_key.scalar_multiply(&view_key.to_scalar()).to_x_coordinate();
         let index = FieldNative::from_u16(index);
@@ -109,7 +108,7 @@ impl Ciphertext {
         let program_id = ProgramIDNative::from_str(&program).map_err(|e| e.to_string())?;
         let function_name = IdentifierNative::from_str(&function_name).map_err(|e| e.to_string())?;
         let function_id =
-            compute_function_id(&U16::<CurrentNetwork>::new(CurrentNetwork::ID), &program_id, &function_name)
+            compute_function_id(&U16Native::new(CurrentNetwork::ID), &program_id, &function_name)
                 .map_err(|e| e.to_string())?;
         let index = FieldNative::from_u16(index);
 
@@ -252,7 +251,7 @@ mod tests {
         PrivateKey,
         Transition,
         plaintext_to_js_value,
-        types::native::{CurrentNetwork, FieldNative, IdentifierNative},
+        types::native::{ FieldNative, IdentifierNative},
         utilities::test::get_env,
     };
     use snarkvm_console::{
@@ -299,11 +298,11 @@ mod tests {
         let tvk = tpk.scalar_multiply(&view_key.to_scalar()).to_x_coordinate();
 
         // Construct all the key material needed to decrypt the ciphertext.
-        let network_id = U16::<CurrentNetwork>::new(1);
-        let program_id = ProgramID::<CurrentNetwork>::from_str(&transition.program_id()).unwrap();
+        let network_id = U16Native::new(1);
+        let program_id = ProgramIDNative::from_str(&transition.program_id()).unwrap();
         let function_name = IdentifierNative::from_str(&transition.function_name()).unwrap();
         let function_id = compute_function_id(&network_id, &program_id, &function_name).unwrap();
-        let index = FieldNative::from_u16(u16::try_from(1).or_halt_with::<CurrentNetwork>("Input index exceeds u16"));
+        let index = FieldNative::from_u16(u16::try_from(1).unwrap_or(0));
 
         // Construct the view key used to encrypt the input.
         let input_view_key = Field::from(CurrentNetwork::hash_psd4(&[function_id, *tvk, index]).unwrap());

@@ -126,7 +126,7 @@ impl Address {
     /// @returns {Address} The address object.
     #[wasm_bindgen(js_name = "fromGroup")]
     pub fn from_group(group: Group) -> Self {
-        Self::from(group)
+        Self::from(&group)
     }
 
     /// Get the group representation of the address object.

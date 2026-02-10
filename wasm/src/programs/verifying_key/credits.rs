@@ -15,6 +15,7 @@
 // along with the Provable SDK library. If not, see <https://www.gnu.org/licenses/>.
 
 use super::*;
+use crate::types::native::CurrentNetwork;
 
 #[wasm_bindgen]
 impl VerifyingKey {

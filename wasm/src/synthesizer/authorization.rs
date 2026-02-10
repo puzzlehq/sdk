@@ -92,7 +92,13 @@ impl Authorization {
     /// @returns {string} The function name.
     #[wasm_bindgen(js_name = "functionName")]
     pub fn function_name(&self) -> Result<String, String> {
-        Ok(self.get(0).map_err(|e| e.to_string())?.function_name().to_string())
+        // Get function name from first transition
+        let transitions = self.0.transitions();
+        if transitions.is_empty() {
+            return Err("Authorization has no transitions".to_string());
+        }
+        let (_, transition) = transitions.get_index(0).ok_or("Authorization has no transitions")?;
+        Ok(transition.function_name().to_string())
     }
 }
 
@@ -215,7 +221,7 @@ impl Eq for Authorization {}
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{types::native::CurrentNetwork, utilities::test::PUZZLE_SPINNER_V002_AUTHORIZATION};
+    use crate::{types::native::utilities::test::PUZZLE_SPINNER_V002_AUTHORIZATION};
     use snarkvm_wasm::console::network::Network;
 
     use wasm_bindgen_test::*;

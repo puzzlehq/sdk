@@ -25,9 +25,9 @@ pub use execution::*;
 pub mod keypair;
 pub use keypair::*;
 
-#[cfg(feature = "browser")]
+#[cfg(any(feature = "browser", feature = "serial"))]
 pub mod manager;
-#[cfg(feature = "browser")]
+#[cfg(any(feature = "browser", feature = "serial"))]
 pub use manager::*;
 
 pub mod offline_query;

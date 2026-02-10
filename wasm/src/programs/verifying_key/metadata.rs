@@ -15,6 +15,7 @@
 // along with the Provable SDK library. If not, see <https://www.gnu.org/licenses/>.
 
 use super::*;
+use crate::types::native::parameters;
 
 #[wasm_bindgen]
 #[derive(Clone, Debug)]
@@ -69,8 +70,8 @@ impl Metadata {
             "bond_public",
             "bondPublicVerifier",
             "credits.aleo/bond_public",
-            crate::types::native::parameters::BondPublicProver::METADATA,
-            crate::types::native::parameters::BondPublicVerifier::METADATA,
+            parameters::BondPublicProver::METADATA,
+            parameters::BondPublicVerifier::METADATA,
         )
     }
 
@@ -80,8 +81,8 @@ impl Metadata {
             "bond_validator",
             "bondValidatorVerifier",
             "credits.aleo/bond_validator",
-            crate::types::native::parameters::BondValidatorProver::METADATA,
-            crate::types::native::parameters::BondValidatorVerifier::METADATA,
+            parameters::BondValidatorProver::METADATA,
+            parameters::BondValidatorVerifier::METADATA,
         )
     }
 
@@ -91,8 +92,8 @@ impl Metadata {
             "claim_unbond_public",
             "claimUnbondPublicVerifier",
             "credits.aleo/claim_unbond_public",
-            crate::types::native::parameters::ClaimUnbondPublicProver::METADATA,
-            crate::types::native::parameters::ClaimUnbondPublicVerifier::METADATA,
+            parameters::ClaimUnbondPublicProver::METADATA,
+            parameters::ClaimUnbondPublicVerifier::METADATA,
         )
     }
 
@@ -102,8 +103,8 @@ impl Metadata {
             "fee_private",
             "feePrivateVerifier",
             "credits.aleo/fee_private",
-            crate::types::native::parameters::FeePrivateProver::METADATA,
-            crate::types::native::parameters::FeePrivateVerifier::METADATA,
+            parameters::FeePrivateProver::METADATA,
+            parameters::FeePrivateVerifier::METADATA,
         )
     }
 
@@ -113,8 +114,8 @@ impl Metadata {
             "fee_public",
             "feePublicVerifier",
             "credits.aleo/fee_public",
-            crate::types::native::parameters::FeePublicProver::METADATA,
-            crate::types::native::parameters::FeePublicVerifier::METADATA,
+            parameters::FeePublicProver::METADATA,
+            parameters::FeePublicVerifier::METADATA,
         )
     }
 
@@ -124,8 +125,8 @@ impl Metadata {
             "inclusion",
             "inclusionVerifier",
             "inclusion",
-            crate::types::native::parameters::InclusionProver::METADATA,
-            crate::types::native::parameters::InclusionVerifier::METADATA,
+            parameters::InclusionProver::METADATA,
+            parameters::InclusionVerifier::METADATA,
         )
     }
 
@@ -135,8 +136,8 @@ impl Metadata {
             "join",
             "joinVerifier",
             "credits.aleo/join",
-            crate::types::native::parameters::JoinProver::METADATA,
-            crate::types::native::parameters::JoinVerifier::METADATA,
+            parameters::JoinProver::METADATA,
+            parameters::JoinVerifier::METADATA,
         )
     }
 
@@ -146,8 +147,8 @@ impl Metadata {
             "set_validator_state",
             "setValidatorStateVerifier",
             "credits.aleo/set_validator_state",
-            crate::types::native::parameters::SetValidatorStateProver::METADATA,
-            crate::types::native::parameters::SetValidatorStateVerifier::METADATA,
+            parameters::SetValidatorStateProver::METADATA,
+            parameters::SetValidatorStateVerifier::METADATA,
         )
     }
 
@@ -157,8 +158,8 @@ impl Metadata {
             "split",
             "splitVerifier",
             "credits.aleo/split",
-            crate::types::native::parameters::SplitProver::METADATA,
-            crate::types::native::parameters::SplitVerifier::METADATA,
+            parameters::SplitProver::METADATA,
+            parameters::SplitVerifier::METADATA,
         )
     }
 
@@ -168,8 +169,8 @@ impl Metadata {
             "transfer_private",
             "transferPrivateVerifier",
             "credits.aleo/transfer_private",
-            crate::types::native::parameters::TransferPrivateProver::METADATA,
-            crate::types::native::parameters::TransferPrivateVerifier::METADATA,
+            parameters::TransferPrivateProver::METADATA,
+            parameters::TransferPrivateVerifier::METADATA,
         )
     }
 
@@ -179,8 +180,8 @@ impl Metadata {
             "transfer_private_to_public",
             "transferPrivateToPublicVerifier",
             "credits.aleo/transfer_private_to_public",
-            crate::types::native::parameters::TransferPrivateToPublicProver::METADATA,
-            crate::types::native::parameters::TransferPrivateToPublicVerifier::METADATA,
+            parameters::TransferPrivateToPublicProver::METADATA,
+            parameters::TransferPrivateToPublicVerifier::METADATA,
         )
     }
 
@@ -190,8 +191,8 @@ impl Metadata {
             "transfer_public",
             "transferPublicVerifier",
             "credits.aleo/transfer_public",
-            crate::types::native::parameters::TransferPublicProver::METADATA,
-            crate::types::native::parameters::TransferPublicVerifier::METADATA,
+            parameters::TransferPublicProver::METADATA,
+            parameters::TransferPublicVerifier::METADATA,
         )
     }
 
@@ -201,8 +202,8 @@ impl Metadata {
             "transfer_public_as_signer",
             "transferPublicAsSignerVerifier",
             "credits.aleo/transfer_public_as_signer",
-            crate::types::native::parameters::TransferPublicAsSignerProver::METADATA,
-            crate::types::native::parameters::TransferPublicAsSignerVerifier::METADATA,
+            parameters::TransferPublicAsSignerProver::METADATA,
+            parameters::TransferPublicAsSignerVerifier::METADATA,
         )
     }
 
@@ -212,8 +213,8 @@ impl Metadata {
             "transfer_public_to_private",
             "transferPublicToPrivateVerifier",
             "credits.aleo/transfer_public_to_private",
-            crate::types::native::parameters::TransferPublicToPrivateProver::METADATA,
-            crate::types::native::parameters::TransferPublicToPrivateVerifier::METADATA,
+            parameters::TransferPublicToPrivateProver::METADATA,
+            parameters::TransferPublicToPrivateVerifier::METADATA,
         )
     }
 
@@ -223,8 +224,8 @@ impl Metadata {
             "unbond_public",
             "unbondPublicVerifier",
             "credits.aleo/unbond_public",
-            crate::types::native::parameters::UnbondPublicProver::METADATA,
-            crate::types::native::parameters::UnbondPublicVerifier::METADATA,
+            parameters::UnbondPublicProver::METADATA,
+            parameters::UnbondPublicVerifier::METADATA,
         )
     }
 }
