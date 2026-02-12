@@ -125,6 +125,7 @@ impl ProgramManager {
         process: &mut ProcessNative,
         program: &ProgramNative,
         imports: Option<Object>,
+        import_editions: Option<Object>,
     ) -> Result<(), String> {
         if let Some(imports) = imports {
             program.imports().keys().try_for_each(|program_id| {
@@ -137,12 +138,19 @@ impl ProgramManager {
                     if &program_id != "credits.aleo" {
                         log(&format!("Importing program: {program_id}"));
                         let import = ProgramNative::from_str(&import_string).map_err(|err| err.to_string())?;
-                        // If the program has imports, add them
-                        Self::resolve_imports(process, &import, Some(imports.clone()))?;
-                        // If the process does not already contain the program, add it
+                        
+                        // Get edition for this import (default to 1 if not provided)
+                        let edition = import_editions
+                            .as_ref()
+                            .and_then(|editions| Reflect::get(editions, &program_id.as_str().into()).ok())
+                            .and_then(|v| v.as_f64().map(|n| n as u16))
+                            .unwrap_or(1);
+                        
+                        // If the program has imports, add them recursively
+                        Self::resolve_imports(process, &import, Some(imports.clone()), import_editions.clone())?;
+                        // If the process does not already contain the program, add it with the correct edition
                         if !process.contains_program(import.id()) {
-                            process.add_program(&import).map_err(|err| err.to_string())?;
-                            process.add_program(&import).map_err(|err| err.to_string())?;
+                            process.add_program_with_edition(&import, edition).map_err(|err| err.to_string())?;
                         }
                     }
                 }
@@ -243,7 +251,7 @@ function add_and_double:
         let multiply_program = ProgramNative::from_str(MULTIPLY_PROGRAM).unwrap();
         let double_program = ProgramNative::from_str(MULTIPLY_IMPORT_PROGRAM).unwrap();
 
-        ProgramManager::resolve_imports(&mut process, &program, Some(imports)).unwrap();
+        ProgramManager::resolve_imports(&mut process, &program, Some(imports), None).unwrap();
 
         assert!(process.contains_program(add_program.id()));
         assert!(process.contains_program(multiply_program.id()));

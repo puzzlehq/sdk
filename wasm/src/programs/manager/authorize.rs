@@ -49,6 +49,7 @@ impl ProgramManager {
         inputs: Array,
         imports: Option<Object>,
         edition: Option<u16>,
+        import_editions: Option<Object>,
     ) -> Result<Authorization, String> {
         let mut process_native = ProcessNative::load_web().map_err(|err| err.to_string())?;
         let process = &mut process_native;
@@ -56,7 +57,7 @@ impl ProgramManager {
         log("Check program imports are valid and add them to the process");
         let program_native = ProgramNative::from_str(program).map_err(|e| e.to_string())?;
         log(&format!("Creating proving request for {}:{function_name}", program_native.id()));
-        ProgramManager::resolve_imports(process, &program_native, imports)?;
+        ProgramManager::resolve_imports(process, &program_native, imports, import_editions)?;
         let rng = &mut StdRng::from_entropy();
 
         // Authorize the main program.
@@ -83,6 +84,8 @@ impl ProgramManager {
     /// @param function_name The function to authorize.
     /// @param inputs A javascript array of inputs to the function.
     /// @param imports The imports to the program in the format {"programname.aleo":"aleo instructions source code"}.
+    /// @param edition The edition of the main program (defaults to 1 if not provided).
+    /// @param import_editions The editions of imported programs in the format {"programname.aleo": edition_number} (defaults to 1 for each import if not provided).
     #[wasm_bindgen(js_name = buildAuthorizationUnchecked)]
     pub async fn authorize_unchecked(
         private_key: &PrivateKey,
@@ -91,6 +94,7 @@ impl ProgramManager {
         inputs: Array,
         imports: Option<Object>,
         edition: Option<u16>,
+        import_editions: Option<Object>,
     ) -> Result<Authorization, String> {
         let mut process_native = ProcessNative::load_web().map_err(|err| err.to_string())?;
         let process = &mut process_native;
@@ -98,7 +102,7 @@ impl ProgramManager {
         log("Check program imports are valid and add them to the process");
         let program_native = ProgramNative::from_str(program).map_err(|e| e.to_string())?;
         log(&format!("Creating proving request for {}:{function_name}", program_native.id()));
-        ProgramManager::resolve_imports(process, &program_native, imports)?;
+        ProgramManager::resolve_imports(process, &program_native, imports, import_editions)?;
         let rng = &mut StdRng::from_entropy();
 
         // Authorize the main program.

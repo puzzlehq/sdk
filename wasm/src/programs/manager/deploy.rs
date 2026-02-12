@@ -84,7 +84,7 @@ impl ProgramManager {
         let program = ProgramNative::from_str(program).map_err(|err| err.to_string())?;
 
         log("Checking program imports are valid and add them to the process");
-        ProgramManager::resolve_imports(process, &program, imports)?;
+        ProgramManager::resolve_imports(process, &program, imports, None)?;
         let rng = &mut StdRng::from_entropy();
 
         log("Creating deployment");
@@ -165,7 +165,7 @@ impl ProgramManager {
         let program = ProgramNative::from_str(program).map_err(|err| err.to_string())?;
 
         log("Check program imports are valid and add them to the process");
-        ProgramManager::resolve_imports(process, &program, imports)?;
+        ProgramManager::resolve_imports(process, &program, imports, None)?;
 
         log("Create sample deployment");
         let deployment =

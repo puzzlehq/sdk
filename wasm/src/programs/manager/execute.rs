@@ -104,7 +104,7 @@ impl ProgramManager {
 
         log("Check program imports are valid and add them to the process");
         let program_native = ProgramNative::from_str(program).map_err(|e| e.to_string())?;
-        ProgramManager::resolve_imports(process, &program_native, imports)?;
+        ProgramManager::resolve_imports(process, &program_native, imports, None)?;
         let edition = edition.unwrap_or(1);
 
         let (response, mut trace) = execute_program!(
@@ -203,7 +203,7 @@ impl ProgramManager {
         log("Check program imports are valid and add them to the process");
         let program_native = ProgramNative::from_str(program).map_err(|e| e.to_string())?;
         let program_id = program_native.id().to_string();
-        ProgramManager::resolve_imports(process, &program_native, imports)?;
+        ProgramManager::resolve_imports(process, &program_native, imports, None)?;
         let rng = &mut StdRng::from_entropy();
 
         log(&format!("Executing function: {program_id}/{function} on-chain"));
@@ -336,7 +336,7 @@ impl ProgramManager {
         let program_id = program_native.id().to_string();
 
         // Insert the program and its imports.
-        ProgramManager::resolve_imports(process, &program_native, imports)?;
+        ProgramManager::resolve_imports(process, &program_native, imports, None)?;
         if program_id != "credits.aleo" && !process.contains_program(program_native.id()) {
             process.add_program(&program_native).map_err(|e| e.to_string())?;
         }
@@ -498,7 +498,7 @@ impl ProgramManager {
             .map_err(|e| e.to_string())?;
 
         // Resolve program imports.
-        ProgramManager::resolve_imports(process, &program_native, imports)?;
+        ProgramManager::resolve_imports(process, &program_native, imports, None)?;
 
         // Add the program to the process.
         let program_id = program_native.id();
@@ -571,7 +571,7 @@ impl ProgramManager {
         let program_native = ProgramNative::from_str(program).map_err(|e| e.to_string())?;
 
         // Resolve program imports.
-        ProgramManager::resolve_imports(process, &program_native, imports)?;
+        ProgramManager::resolve_imports(process, &program_native, imports, None)?;
 
         // Add the program to the process.
         let program_id = program_native.id();
