@@ -197,4 +197,22 @@ const networks = [
     "mainnet",
 ];
 
-await Promise.all(networks.map(build));
+// Build networks sequentially to avoid cache conflicts
+// This ensures each network gets its own fresh build
+for (const network of networks) {
+    await build(network);
+}
+
+// Workaround: Rollup plugin produces wrong WASM for mainnet (hash 76087a4a instead of 42632734)
+// Manually rebuild mainnet with Cargo and copy to dist
+console.log("🔧 Workaround: Rebuilding mainnet WASM with Cargo...");
+const { execSync } = await import("child_process");
+execSync(
+    "cargo build --release --target wasm32-unknown-unknown --no-default-features --features browser,mainnet",
+    { stdio: "inherit" }
+);
+await $fs.copyFile(
+    "target/wasm32-unknown-unknown/release/aleo_wasm.wasm",
+    "dist/mainnet/aleo_wasm.wasm"
+);
+console.log("✅ Mainnet WASM manually fixed");
