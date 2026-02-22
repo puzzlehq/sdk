@@ -104,9 +104,8 @@ mod tests {
     use super::*;
     use crate::{
         PrivateKey,
-        types::native::{AddressNative},
+        types::native::{AddressNative, CurrentNetwork},
     };
-
     use snarkvm_console::network::Network;
 
     #[test]

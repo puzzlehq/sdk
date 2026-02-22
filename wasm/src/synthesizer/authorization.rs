@@ -221,10 +221,29 @@ impl Eq for Authorization {}
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{types::native::utilities::test::PUZZLE_SPINNER_V002_AUTHORIZATION};
-    use snarkvm_wasm::console::network::Network;
+    use crate::types::native::{AuthorizationNative, CurrentNetwork};
+    use crate::utilities::test::PUZZLE_SPINNER_V002_AUTHORIZATION;
+    use snarkvm_console::network::Network;
+    use snarkvm_wasm::utilities::{FromBytes, ToBytes};
+    use std::str::FromStr;
 
     use wasm_bindgen_test::*;
+
+    /// Host-only: roundtrip using native type only (no wasm_bindgen/js_sys). Use when wasm-pack test fails.
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    fn test_authorization_native_roundtrip_host() {
+        if CurrentNetwork::ID != 0 {
+            return;
+        }
+        let auth = AuthorizationNative::from_str(PUZZLE_SPINNER_V002_AUTHORIZATION).expect("parse");
+        let s = auth.to_string();
+        let auth_from_str = AuthorizationNative::from_str(&s).expect("roundtrip string");
+        assert_eq!(auth.to_string(), auth_from_str.to_string());
+        let bytes = auth.to_bytes_le().expect("to_bytes_le");
+        let auth_from_bytes = AuthorizationNative::from_bytes_le(bytes.as_slice()).expect("roundtrip bytes");
+        assert_eq!(auth.to_string(), auth_from_bytes.to_string());
+    }
 
     #[wasm_bindgen_test]
     fn test_authorization_serialization() {

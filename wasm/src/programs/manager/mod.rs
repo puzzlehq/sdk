@@ -49,6 +49,15 @@ use std::panic::{AssertUnwindSafe, catch_unwind};
 use js_sys::{Object, Reflect};
 use std::str::FromStr;
 use wasm_bindgen::prelude::wasm_bindgen;
+use wasm_bindgen::JsValue;
+
+/// Read edition from a JS value: accept number (0, 1) or string "0"/"1" so we never
+/// silently default to 1 when the wallet/API sent 0 as a string.
+fn js_value_to_edition(v: &JsValue) -> Option<u16> {
+    v.as_f64()
+        .map(|n| n as u16)
+        .or_else(|| v.as_string().and_then(|s| s.parse::<u16>().ok()))
+}
 
 #[wasm_bindgen]
 #[derive(Clone)]
@@ -139,11 +148,12 @@ impl ProgramManager {
                         log(&format!("Importing program: {program_id}"));
                         let import = ProgramNative::from_str(&import_string).map_err(|err| err.to_string())?;
                         
-                        // Get edition for this import (default to 1 if not provided)
+                        // Get edition for this import (default to 1 if not provided).
+                        // Accept both number and string "0"/"1" so we don't silently use 1 when API sent 0 as string.
                         let edition = import_editions
                             .as_ref()
                             .and_then(|editions| Reflect::get(editions, &program_id.as_str().into()).ok())
-                            .and_then(|v| v.as_f64().map(|n| n as u16))
+                            .and_then(|v| js_value_to_edition(&v))
                             .unwrap_or(1);
                         
                         // If the program has imports, add them recursively

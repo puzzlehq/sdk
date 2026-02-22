@@ -23,7 +23,7 @@
     "test:sdk": "cd sdk && yarn test",
     "test": "yarn test:wasm && yarn test:sdk",
     "change-version": "node scripts/change-version.js",
-    "deploy:wasm": "cd wasm && npm publish --access=public",
+    "deploy:wasm": "cd wasm && npm publish --access=public --registry=https://registry.npmjs.org/",
     "deploy:sdk": "cd sdk && npm publish --access=public",
     "deploy:create-leo-app": "cd create-leo-app && npm publish --access=public",
     "deploy": "yarn build:all && yarn deploy:wasm && yarn deploy:sdk && yarn deploy:create-leo-app",

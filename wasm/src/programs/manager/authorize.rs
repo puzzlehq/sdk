@@ -182,7 +182,7 @@ mod tests {
 
         // Create the puzzle spinner authorization and ensure it has the correct amount of transitions.
         let authorization =
-            ProgramManager::authorize(&private_key, PUZZLE_SPINNER_V002, function_name, inputs, imports, None)
+            ProgramManager::authorize(&private_key, PUZZLE_SPINNER_V002, function_name, inputs, imports, None, None)
                 .await
                 .unwrap();
         console_log!("{authorization:?}");
@@ -211,4 +211,73 @@ mod tests {
         // Assert there is only one transition.
         assert_eq!(fee_authorization.transitions().length(), 1);
     }
+
+    /// Test that fee authorization with USAD-like base + priority fee round-trips via string and bytes.
+    /// This validates the serialization path the node will use when verifying the transaction.
+    #[wasm_bindgen_test]
+    async fn test_fee_authorization_with_priority_roundtrip() {
+        let private_key = PrivateKey::from_string(&get_env("PUZZLE_PK")).unwrap();
+        let function_name = "spin";
+        let inputs = generate_puzzle_inputs();
+        let imports = Some(generate_puzzle_imports());
+
+        let authorization = ProgramManager::authorize_unchecked(
+            &private_key,
+            PUZZLE_SPINNER_V002,
+            function_name,
+            inputs,
+            imports,
+            None,
+            None,
+        )
+        .await
+        .unwrap();
+        let execution_id = authorization.to_execution_id().unwrap().to_string();
+
+        // USAD-like fee: base (e.g. 0.003087) + priority (0.01)
+        let base_fee_credits = 0.003087;
+        let priority_fee_credits = 0.01;
+        let fee_authorization = ProgramManager::authorize_fee(
+            &private_key,
+            &execution_id,
+            base_fee_credits,
+            priority_fee_credits,
+            None,
+        )
+        .await
+        .unwrap();
+
+        assert!(fee_authorization.is_fee_public());
+        assert_eq!(fee_authorization.len(), 1);
+        assert_eq!(fee_authorization.transitions().length(), 1);
+
+        // Round-trip via string (same format sent wallet -> jigsaw -> bigshot -> node)
+        let fee_auth_from_string =
+            Authorization::from_string(fee_authorization.to_string()).unwrap();
+        assert!(
+            fee_auth_from_string.equals(&fee_authorization),
+            "fee_authorization string roundtrip must match"
+        );
+
+        // Round-trip via bytes (node/snarkvm may use byte representation)
+        let fee_auth_from_bytes =
+            Authorization::from_bytes_le(fee_authorization.to_bytes_le().unwrap()).unwrap();
+        assert!(
+            fee_auth_from_bytes.equals(&fee_authorization),
+            "fee_authorization bytes roundtrip must match"
+        );
+
+        // Main authorization roundtrip (same code path as wallet buildAuthorizationUnchecked)
+        let auth_from_string = Authorization::from_string(authorization.to_string()).unwrap();
+        let auth_from_bytes = Authorization::from_bytes_le(authorization.to_bytes_le().unwrap()).unwrap();
+        assert!(auth_from_string.equals(&authorization));
+        assert!(auth_from_bytes.equals(&authorization));
+    }
+
+    // Host "full" roundtrip test removed: building main + fee auth on host with the puzzle
+    // program fails because the pre-baked puzzle inputs (PUZZLE_SPINNER_V002_INPUT_0, etc.)
+    // were created for a different signer; using our test key yields "Input record must belong
+    // to the signer". The ProgramManager path can't run on host (js_sys / wasm-bindgen).
+    // Definitive test: rebuild SDK, rebuild wallet with that SDK, run in WASM with logs.
+    // See docs/USAD_SDK_WASM_AUTH_ROUNDTRIP_TEST.md.
 }
