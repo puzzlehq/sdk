@@ -182,6 +182,20 @@ impl Program {
                     Reflect::set(&input, &"register".into(), &register).map_err(|_| "Failed to set property")?;
                     function_inputs.set(index as u32, input.into());
                 }
+                ValueType::DynamicRecord => {
+                    let input = Object::new();
+                    let value_type = JsValue::from_str("dynamic_record");
+                    Reflect::set(&input, &"type".into(), &value_type).map_err(|_| "Failed to set property")?;
+                    Reflect::set(&input, &"register".into(), &register).map_err(|_| "Failed to set property")?;
+                    function_inputs.set(index as u32, input.into());
+                }
+                ValueType::DynamicFuture => {
+                    let input = Object::new();
+                    let value_type = JsValue::from_str("dynamic_future");
+                    Reflect::set(&input, &"type".into(), &value_type).map_err(|_| "Failed to set property")?;
+                    Reflect::set(&input, &"register".into(), &register).map_err(|_| "Failed to set property")?;
+                    function_inputs.set(index as u32, input.into());
+                }
             }
         }
         Ok(function_inputs)
@@ -262,6 +276,15 @@ impl Program {
                     .map_err(|_| "Failed to set property")?;
                 let inputs = self.get_struct_members(struct_name)?;
                 Reflect::set(&input, &"members".into(), &inputs.into()).map_err(|_| "Failed to set property")?;
+            }
+            PlaintextType::ExternalStruct(locator) => {
+                if let Some(name) = name {
+                    Reflect::set(&input, &"name".into(), &name.into()).map_err(|_| "Failed to set property")?;
+                }
+                Reflect::set(&input, &"type".into(), &"external_struct".into())
+                    .map_err(|_| "Failed to set property")?;
+                Reflect::set(&input, &"locator".into(), &locator.to_string().into())
+                    .map_err(|_| "Failed to set property")?;
             }
         }
         if let Some(visibility) = visibility {

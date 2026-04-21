@@ -115,5 +115,49 @@ pub fn output_to_js_value(output: &OutputNative, convert_to_js: bool) -> JsValue
             };
             JsValue::from(&value)
         }
+        OutputNative::DynamicRecord(id) => {
+            let dynamic_record = object! {
+                "type": "dynamicRecord",
+                "id": if convert_to_js { JsValue::from(id.to_string()) } else { JsValue::from(Field::from(id)) },
+            };
+            JsValue::from(dynamic_record)
+        }
+        OutputNative::RecordWithDynamicID(commitment, checksum, record_ciphertext, sender_ciphertext, dynamic_id) => {
+            let value = if let Some(record_ciphertext) = record_ciphertext {
+                if convert_to_js {
+                    JsValue::from(record_ciphertext.to_string())
+                } else {
+                    JsValue::from(RecordCiphertext::from(record_ciphertext))
+                }
+            } else {
+                JsValue::UNDEFINED
+            };
+            let sender_ciphertext = if let Some(sender_ciphertext) = sender_ciphertext {
+                if convert_to_js {
+                    JsValue::from(sender_ciphertext.to_string())
+                } else {
+                    JsValue::from(Field::from(sender_ciphertext))
+                }
+            } else {
+                JsValue::UNDEFINED
+            };
+            let record = object! {
+                "type": "recordWithDynamicId",
+                "id": if convert_to_js { JsValue::from(commitment.to_string()) } else { JsValue::from(Field::from(commitment)) },
+                "checksum": if convert_to_js { JsValue::from(checksum.to_string()) } else { JsValue::from(Field::from(checksum)) },
+                "value": value,
+                "sender_ciphertext": sender_ciphertext,
+                "dynamicId": if convert_to_js { JsValue::from(dynamic_id.to_string()) } else { JsValue::from(Field::from(dynamic_id)) },
+            };
+            JsValue::from(record)
+        }
+        OutputNative::ExternalRecordWithDynamicID(id, dynamic_id) => {
+            let external_record_object = object! {
+                "type": "externalRecordWithDynamicId",
+                "id": if convert_to_js { JsValue::from(id.to_string()) } else { JsValue::from(Field::from(id)) },
+                "dynamicId": if convert_to_js { JsValue::from(dynamic_id.to_string()) } else { JsValue::from(Field::from(dynamic_id)) },
+            };
+            JsValue::from(external_record_object)
+        }
     }
 }

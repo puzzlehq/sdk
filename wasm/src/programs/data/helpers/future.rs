@@ -40,6 +40,14 @@ pub fn future_to_js_value(argument: &FutureNative, convert_to_js: bool, id: &Fie
                 }
             }
             ArgumentNative::Future(future) => future_to_js_value(future, convert_to_js, id),
+            ArgumentNative::DynamicFuture(dynamic_future) => {
+                let dynamic_future_object = object! {
+                    "type": "dynamicFuture",
+                    "id": if convert_to_js { JsValue::from(&id.to_string()) } else { JsValue::from(Field::from(id)) },
+                    "value": JsValue::from_str(&dynamic_future.to_string()),
+                };
+                JsValue::from(dynamic_future_object)
+            }
         })
         .collect::<Array>();
     let future_object = object! {
