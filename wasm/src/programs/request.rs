@@ -198,6 +198,7 @@ impl ExecutionRequest {
             root_tvk,
             is_root,
             program_checksum,
+            false,
             &mut rng,
         )
         .map_err(|e| e.to_string())?;
